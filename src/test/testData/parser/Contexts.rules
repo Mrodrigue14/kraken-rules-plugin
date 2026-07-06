@@ -1,0 +1,50 @@
+Namespace Test
+
+Contexts {
+    Context Policy {
+        Child RiskItem
+    }
+    Contexts {
+        Context RiskItem {
+            String itemName
+            @ForbidTarget String forbiddenAsTarget
+            @ForbidReference String forbiddenAsReference
+        }
+    }
+}
+
+ExternalContext {
+    security : SecurityContext,
+    external : {
+        billing : BillingInfo
+    }
+}
+
+ExternalEntity SecurityContext {
+    String userName
+}
+
+@Dimension('packageCd', 'Pizza')
+Rules {
+    @Dimension('planCd', 'Premium')
+    Rule 'rule1' On RiskItem.itemName {
+        Assert itemName = 'a'
+        Error 'error'
+        Overridable
+    }
+    Rules {
+        Rule 'rule2' On RiskItem.itemName {
+            Set Disabled
+        }
+    }
+}
+
+EntryPoints {
+    EntryPoint 'ep1' { 'rule1' }
+    EntryPoints {
+        EntryPoint 'ep2' { 'rule1', 'rule2' }
+    }
+}
+
+Dimension 'packageCd' : String
+Dimension 'planCd' : String

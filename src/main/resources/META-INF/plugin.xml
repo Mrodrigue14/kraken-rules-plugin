@@ -1,0 +1,97 @@
+<idea-plugin>
+    <id>io.github.masterketchup144.kraken-rules</id>
+    <name>Kraken Rules</name>
+    <vendor email="masterketchup144@gmail.com">Miguel</vendor>
+
+    <description><![CDATA[
+        Language support for Kraken <code>.rules</code> files
+        (<a href="https://github.com/eisgroup/kraken-rules">eisgroup/kraken-rules</a> DSL).
+        <ul>
+            <li>Syntax highlighting</li>
+            <li>Code completion (keywords, payloads, @Dimension, rule names)</li>
+            <li>Inspections (rule without name, unresolved rule reference)</li>
+            <li>Intention: add missing 'On' clause</li>
+            <li>Navigation between EntryPoint items and Rule declarations</li>
+            <li>Rename refactoring for rules</li>
+        </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <b>0.1.0</b>
+        <ul>
+            <li>Initial release: syntax highlighting, code completion, inspections,
+            intention action, navigation and rename refactoring for Kraken .rules files.</li>
+            <li>Grammar validated against the full test corpus of the official
+            eisgroup/kraken-rules repository.</li>
+        </ul>
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+                name="Kraken Rules"
+                implementationClass="com.kraken.plugin.lang.KrakenFileType"
+                fieldName="INSTANCE"
+                language="Kraken"
+                extensions="rules"/>
+
+        <lang.parserDefinition
+                language="Kraken"
+                implementationClass="com.kraken.plugin.lang.KrakenParserDefinition"/>
+
+        <lang.syntaxHighlighterFactory
+                language="Kraken"
+                implementationClass="com.kraken.plugin.highlighter.KrakenSyntaxHighlighterFactory"/>
+
+        <colorSettingsPage
+                implementation="com.kraken.plugin.highlighter.KrakenColorSettingsPage"/>
+
+        <lang.commenter
+                language="Kraken"
+                implementationClass="com.kraken.plugin.lang.KrakenCommenter"/>
+
+        <lang.braceMatcher
+                language="Kraken"
+                implementationClass="com.kraken.plugin.lang.KrakenBraceMatcher"/>
+
+        <completion.contributor
+                language="Kraken"
+                implementationClass="com.kraken.plugin.completion.KrakenCompletionContributor"/>
+
+        <lang.findUsagesProvider
+                language="Kraken"
+                implementationClass="com.kraken.plugin.navigation.KrakenFindUsagesProvider"/>
+
+        <gotoDeclarationHandler
+                implementation="com.kraken.plugin.navigation.KrakenGotoDeclarationHandler"/>
+
+        <lang.elementManipulator
+                forClass="com.kraken.plugin.psi.KrakenRuleRef"
+                implementationClass="com.kraken.plugin.psi.KrakenRuleRefManipulator"/>
+
+        <localInspection
+                language="Kraken"
+                shortName="KrakenRuleWithoutName"
+                displayName="Rule without name"
+                groupName="Kraken"
+                enabledByDefault="true"
+                level="ERROR"
+                implementationClass="com.kraken.plugin.inspection.KrakenRuleWithoutNameInspection"/>
+
+        <localInspection
+                language="Kraken"
+                shortName="KrakenUnresolvedRuleReference"
+                displayName="Unresolved rule reference in entry point"
+                groupName="Kraken"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="com.kraken.plugin.inspection.KrakenUnresolvedRuleRefInspection"/>
+
+        <intentionAction>
+            <language>Kraken</language>
+            <className>com.kraken.plugin.inspection.KrakenAddOnClauseIntention</className>
+            <category>Kraken</category>
+        </intentionAction>
+    </extensions>
+</idea-plugin>

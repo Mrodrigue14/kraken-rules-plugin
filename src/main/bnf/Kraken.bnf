@@ -1,0 +1,304 @@
+/*
+ * Grammaire Grammar-Kit pour le DSL Kraken .rules
+ * (https://github.com/eisgroup/kraken-rules)
+ *
+ * Basée sur KrakenDSL.g4 / Common.g4 / Value.g4 (ANTLR), volontairement
+ * plus tolérante : le nom de la règle et la clause "On" sont optionnels
+ * (les inspections signalent leur absence), et les expressions KEL sont
+ * analysées de manière permissive (suite de tokens équilibrés).
+ *
+ * Le lexer est écrit à la main : com.kraken.plugin.parser.KrakenLexer
+ */
+{
+  parserClass="com.kraken.plugin.parser.KrakenParser"
+  elementTypeHolderClass="com.kraken.plugin.parser.KrakenTypes"
+  elementTypeClass="com.kraken.plugin.lang.KrakenElementType"
+  tokenTypeClass="com.kraken.plugin.lang.KrakenTokenType"
+  generate=[psi="no"]
+
+  tokens=[
+    LBRACE='{'
+    RBRACE='}'
+    LPAREN='('
+    RPAREN=')'
+    LBRACKET='['
+    RBRACKET=']'
+    COMMA=','
+    DOT='.'
+    COLON=':'
+    AT='@'
+    STAR='*'
+    LT='<'
+    GT='>'
+
+    NAMESPACE_KW='Namespace'
+    INCLUDE_KW='Include'
+    IMPORT_KW='Import'
+    FROM_KW='From'
+    RULE_KW='Rule'
+    RULES_KW='Rules'
+    ON_KW='On'
+    CONTEXT_KW='Context'
+    CONTEXTS_KW='Contexts'
+    SYSTEM_KW='System'
+    ROOT_KW='Root'
+    EXTERNAL_KW='External'
+    EXTERNAL_CONTEXT_KW='ExternalContext'
+    EXTERNAL_ENTITY_KW='ExternalEntity'
+    CHILD_KW='Child'
+    IS_KW='Is'
+    ENTRYPOINT_KW='EntryPoint'
+    ENTRYPOINTS_KW='EntryPoints'
+    WHEN_KW='When'
+    ASSERT_KW='Assert'
+    SET_KW='Set'
+    DEFAULT_KW='Default'
+    RESET_KW='Reset'
+    TO_KW='To'
+    MANDATORY_KW='Mandatory'
+    EMPTY_KW='Empty'
+    DISABLED_KW='Disabled'
+    HIDDEN_KW='Hidden'
+    MATCHES_KW='Matches'
+    SIZE_KW='Size'
+    MIN_KW='Min'
+    MAX_KW='Max'
+    LENGTH_KW='Length'
+    NUMBER_KW='Number'
+    STEP_KW='Step'
+    IN_KW='In'
+    OVERRIDABLE_KW='Overridable'
+    ERROR_KW='Error'
+    WARN_KW='Warn'
+    INFO_KW='Info'
+    DIMENSION_KW='Dimension'
+    FUNCTION_KW='Function'
+    PRIORITY_KW='Priority'
+    DESCRIPTION_KW='Description'
+    NOT_STRICT_KW='NotStrict'
+    FORBID_TARGET_KW='ForbidTarget'
+    FORBID_REFERENCE_KW='ForbidReference'
+    SERVER_SIDE_ONLY_KW='ServerSideOnly'
+    KEL_KW='kel_keyword'
+    TRUE_KW='true'
+    FALSE_KW='false'
+    NULL_KW='null'
+
+    OP='regexp:[-+/%=!?|&^~]+'
+    IDENTIFIER='regexp:[a-zA-Z_][a-zA-Z0-9_]*'
+    STRING='regexp:("[^"]*")|(\x27[^\x27]*\x27)'
+    NUMBER_LIT='regexp:[0-9]+(\.[0-9]+)?'
+    LINE_COMMENT='regexp://[^\r\n]*'
+    BLOCK_COMMENT='regexp:/\*[^*]*\*/'
+    DOC_COMMENT='regexp:/\*\*[^*]*\*/'
+  ]
+}
+
+kraken_file ::= namespace_decl? import_decl* model_item*
+
+private model_item ::= contexts_block
+                     | context_decl
+                     | external_context_decl
+                     | external_entity_decl
+                     | rules_block
+                     | rule_decl
+                     | entry_points_block
+                     | entry_point_decl
+                     | dimension_decl
+                     | function_decl
+
+// ---------- En-tête de fichier ----------
+
+namespace_decl ::= NAMESPACE_KW qualified_name {pin=1}
+private import_decl ::= include_decl | rule_import_decl
+include_decl ::= INCLUDE_KW qualified_name {pin=1}
+rule_import_decl ::= IMPORT_KW RULE_KW import_rule_names FROM_KW qualified_name {pin=1}
+import_rule_names ::= STRING (COMMA STRING)*
+qualified_name ::= id (DOT id)*
+
+// ---------- Annotations ----------
+
+annotation ::= AT annotation_body {pin=1}
+private annotation_body ::= dimension_annotation
+                          | NOT_STRICT_KW
+                          | SERVER_SIDE_ONLY_KW
+                          | FORBID_TARGET_KW
+                          | FORBID_REFERENCE_KW
+                          | id
+dimension_annotation ::= DIMENSION_KW LPAREN annotation_arg COMMA annotation_arg RPAREN {pin=2}
+annotation_arg ::= STRING | signed_number | TRUE_KW | FALSE_KW | qualified_name
+
+// ---------- Contexts ----------
+
+contexts_block ::= CONTEXTS_KW LBRACE contexts_member* RBRACE {pin=1}
+private contexts_member ::= contexts_block | context_decl
+context_decl ::= annotation* ROOT_KW? SYSTEM_KW? CONTEXT_KW id inherited_contexts? LBRACE context_member* RBRACE {pin=4}
+inherited_contexts ::= IS_KW id (COMMA id)* {pin=1}
+private context_member ::= child_decl | field_decl
+child_decl ::= annotation* CHILD_KW STAR? id (COLON nav_value)? {pin=2}
+field_decl ::= annotation* EXTERNAL_KW? id STAR? id (COLON nav_value)?
+path_expr ::= id (DOT id)*
+// Cible de navigation : chemin simple ou ensemble de chemins entre accolades
+private nav_value ::= brace_expr | path_expr
+
+external_context_decl ::= EXTERNAL_CONTEXT_KW LBRACE external_context_items? RBRACE {pin=1}
+external_context_items ::= external_context_item (COMMA external_context_item)*
+external_context_item ::= id COLON external_context_value {pin=2}
+private external_context_value ::= LBRACE external_context_items? RBRACE | id
+
+external_entity_decl ::= EXTERNAL_ENTITY_KW id LBRACE external_field_decl* RBRACE {pin=1}
+external_field_decl ::= id STAR? id
+
+// ---------- Rules ----------
+
+rules_block ::= annotation* RULES_KW LBRACE rules_member* RBRACE {pin=2}
+private rules_member ::= rules_block | rule_decl
+rule_decl ::= annotation* RULE_KW rule_name? rule_target? rule_body {pin=2}
+rule_name ::= STRING
+rule_target ::= ON_KW id (DOT path_expr)? {pin=1}
+rule_body ::= LBRACE rule_clauses RBRACE {pin=1}
+private rule_clauses ::= rule_clause* {recoverWhile=rule_body_recover}
+private rule_body_recover ::= !(RBRACE | RULE_KW | RULES_KW | ENTRYPOINT_KW | ENTRYPOINTS_KW | CONTEXTS_KW | NAMESPACE_KW | AT)
+private rule_clause ::= description_clause
+                      | priority_clause
+                      | when_clause
+                      | set_payload
+                      | default_payload
+                      | assert_payload
+                      | payload_message
+                      | override_clause
+
+description_clause ::= DESCRIPTION_KW STRING {pin=1}
+priority_clause ::= PRIORITY_KW priority_value {pin=1}
+private priority_value ::= MIN_KW | MAX_KW | signed_number
+when_clause ::= WHEN_KW expression {pin=1}
+
+set_payload ::= SET_KW set_kind payload_message? override_clause? {pin=1}
+private set_kind ::= MANDATORY_KW | DISABLED_KW | HIDDEN_KW
+default_payload ::= default_kind TO_KW expression {pin=2}
+private default_kind ::= DEFAULT_KW | RESET_KW
+assert_payload ::= ASSERT_KW assert_kind {pin=1}
+private assert_kind ::= empty_assert
+                      | matches_assert
+                      | length_assert
+                      | size_assert
+                      | number_assert
+                      | in_assert
+                      | expr_assert
+empty_assert ::= EMPTY_KW assert_suffix?
+matches_assert ::= MATCHES_KW STRING assert_suffix?
+length_assert ::= LENGTH_KW NUMBER_LIT assert_suffix?
+size_assert ::= SIZE_KW size_spec assert_suffix?
+private size_spec ::= MIN_KW NUMBER_LIT MAX_KW NUMBER_LIT
+                    | MIN_KW NUMBER_LIT
+                    | MAX_KW NUMBER_LIT
+                    | NUMBER_LIT
+number_assert ::= NUMBER_KW number_spec assert_suffix?
+private number_spec ::= min_bound max_bound? step_bound?
+                      | max_bound step_bound?
+min_bound ::= MIN_KW signed_number {pin=1}
+max_bound ::= MAX_KW signed_number {pin=1}
+step_bound ::= STEP_KW signed_number {pin=1}
+in_assert ::= IN_KW value_list assert_suffix?
+expr_assert ::= expression assert_suffix?
+private assert_suffix ::= payload_message override_clause? | override_clause
+payload_message ::= message_severity STRING (COLON STRING)? {pin=1}
+private message_severity ::= ERROR_KW | WARN_KW | INFO_KW
+override_clause ::= OVERRIDABLE_KW STRING? {pin=1}
+value_list ::= value_item (COMMA value_item)*
+private value_item ::= STRING | signed_number
+signed_number ::= OP? NUMBER_LIT
+
+// ---------- Entry points ----------
+
+entry_points_block ::= annotation* ENTRYPOINTS_KW LBRACE ep_block_member* RBRACE {pin=2}
+private ep_block_member ::= entry_points_block | entry_point_decl
+entry_point_decl ::= annotation* ENTRYPOINT_KW ep_name? LBRACE ep_items_opt RBRACE {pin=2}
+private ep_items_opt ::= entry_point_items? {recoverWhile=ep_recover}
+private ep_recover ::= !(RBRACE | RULE_KW | RULES_KW | ENTRYPOINTS_KW | CONTEXT_KW | CONTEXTS_KW | NAMESPACE_KW | AT)
+ep_name ::= STRING
+entry_point_items ::= entry_point_item (COMMA entry_point_item)*
+private entry_point_item ::= ep_ref | rule_ref
+ep_ref ::= ENTRYPOINT_KW STRING {pin=1}
+rule_ref ::= STRING
+
+// ---------- Dimensions et fonctions ----------
+
+dimension_decl ::= DIMENSION_KW STRING COLON id {pin=1}
+
+function_decl ::= FUNCTION_KW generic_bounds? id LPAREN function_params? RPAREN return_type? function_body? {pin=1}
+generic_bounds ::= LT generic_bound (COMMA generic_bound)* GT {pin=1}
+generic_bound ::= id IS_KW type_ref {pin=2}
+function_params ::= function_param (COMMA function_param)*
+function_param ::= type_ref id?
+return_type ::= COLON type_ref {pin=1}
+type_ref ::= id (LT type_ref (COMMA type_ref)* GT)? (LBRACKET RBRACKET)?
+function_body ::= LBRACE expression RBRACE {pin=1}
+
+// ---------- Expressions KEL (permissives) ----------
+
+expression ::= expr_item+
+private expr_item ::= group_expr | bracket_expr | brace_expr | expr_token
+group_expr ::= LPAREN group_inner* RPAREN {pin=1}
+bracket_expr ::= LBRACKET group_inner* RBRACKET {pin=1}
+brace_expr ::= LBRACE group_inner* RBRACE {pin=1}
+private group_inner ::= group_expr | bracket_expr | brace_expr | expr_token | COMMA | COLON
+private expr_token ::= expr_id
+                     | STRING
+                     | NUMBER_LIT
+                     | TRUE_KW
+                     | FALSE_KW
+                     | NULL_KW
+                     | KEL_KW
+                     | IN_KW
+                     | IS_KW
+                     | set_in_expr
+                     | severity_in_expr
+                     | OP
+                     | LT
+                     | GT
+                     | STAR
+                     | DOT
+
+// "set x to y" est une expression KEL valide, mais "Set Mandatory/Hidden/Disabled"
+// doit rester un payload : lookahead négatif.
+private set_in_expr ::= !(SET_KW set_kind) SET_KW
+// "Info.additionalInfo" est une expression valide, mais "Info \"code\"" est un
+// message de payload : lookahead négatif.
+private severity_in_expr ::= !payload_message message_severity
+
+// Identifiant "élargi" : mots-clés Kraken utilisables comme identifiants
+// (aligné sur krakenModelReservedWord de la grammaire ANTLR)
+private expr_id ::= IDENTIFIER
+                   | ON_KW
+                  | FROM_KW
+                  | TO_KW
+                  | MIN_KW
+                  | MAX_KW
+                  | STEP_KW
+                  | SIZE_KW
+                  | LENGTH_KW
+                  | NUMBER_KW
+                  | EMPTY_KW
+                  | MANDATORY_KW
+                  | DISABLED_KW
+                  | HIDDEN_KW
+                  | DESCRIPTION_KW
+                  | PRIORITY_KW
+                  | EXTERNAL_KW
+                  | CHILD_KW
+                  | ROOT_KW
+                  | SYSTEM_KW
+                  | CONTEXT_KW
+                  | DIMENSION_KW
+                  | FUNCTION_KW
+                  | MATCHES_KW
+                  | INCLUDE_KW
+                  | NAMESPACE_KW
+
+// Dans les positions de déclaration (champs, chemins, cibles On), les mots
+// de sévérité sont aussi des identifiants valides ("String info", "On Info.x")
+private id ::= expr_id
+             | ERROR_KW
+             | WARN_KW
+             | INFO_KW

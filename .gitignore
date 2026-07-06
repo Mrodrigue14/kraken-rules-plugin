@@ -1,0 +1,7 @@
+.gradle/
+build/
+out/
+.idea/
+src/main/gen/
+*.iml
+.qodana/

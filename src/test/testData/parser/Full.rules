@@ -1,0 +1,91 @@
+Namespace Policy
+
+Root Context Policy Is Identifiable {
+    String policyCd
+    String info
+    Decimal to
+    Child AddressInfo
+    Child *RiskItem : riskItems
+    Child *SecondaryInsured : { oneInsured, multipleInsureds }
+}
+
+Context AddressInfo {
+    String postalCode
+    String state
+}
+
+Dimension "state" : String
+
+@Dimension("state", "CA")
+Rule "Set AddressInfo.postalCode to state name" On AddressInfo.postalCode {
+    Reset To "CA"
+}
+
+Rule "Assert dates" On Policy.effectiveDate {
+    Description "Effective date must be in the past"
+    Priority 10
+    When Policy.policyCd != null and Count(Policy.riskItems) > 0
+    Assert effectiveDate < Today()
+    Error "date_code" : "Date must be in the past"
+    Overridable
+}
+
+Rule "Mandatory policy code" On Policy.policyCd {
+    Set Mandatory
+    Error "mandatory_code"
+}
+
+Rule "Hide state" On AddressInfo.state {
+    Set Hidden
+}
+
+Rule "Disable postal code" On AddressInfo.postalCode {
+    Set Disabled
+}
+
+Rule "Number set" On Policy.termNo {
+    Assert Number Min 1 Max 100 Step 1
+}
+
+Rule "In list" On AddressInfo.state {
+    Assert In "CA", "NY", "FL"
+}
+
+Rule "Regexp" On Policy.policyCd {
+    Assert Matches "^Q[0-9]+$"
+}
+
+Rule "Length" On Policy.policyCd {
+    Assert Length 10
+}
+
+Rule "Size" On Policy.riskItems {
+    Assert Size Min 1 Max 5
+}
+
+Rule "Default with condition" On Policy.state {
+    Default To if AddressInfo.state != null then AddressInfo.state else "CA"
+}
+
+Rule "Date literal" On Policy.txEffectiveDate {
+    Assert txEffectiveDate > 2020-01-01T00:00:00Z
+}
+
+Rule "Expression context" On Policy.policyNumber {
+    When context.dimensions.plan = 'Premium'
+    Default To context.dimensions.plan
+}
+
+EntryPoint "Validation" {
+    "Assert dates",
+    "Mandatory policy code",
+    EntryPoint "Nested"
+}
+
+EntryPoint "Nested" {
+    "Hide state"
+}
+
+Function SumOf(Money[] amounts) : Money {
+    Sum(amounts)
+}

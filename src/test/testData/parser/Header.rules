@@ -1,0 +1,16 @@
+Namespace PolicyRules
+
+Include Base
+
+Import Rule "External rule", "Other rule" From Base
+
+// commentaire de ligne
+/* commentaire de bloc */
+
+/**
+ * Documentation.
+ */
+Rule "Local" On Policy.state {
+    When some coverage in Policy.coverages satisfies coverage typeof CollCoverage
+    Assert true
+}

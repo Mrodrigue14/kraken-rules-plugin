@@ -1,0 +1,3 @@
+Rule "My rule" {
+    Assert true
+}
