@@ -7,7 +7,9 @@ import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiWhiteSpace
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
@@ -29,16 +31,18 @@ private class KrakenCompletionProvider : CompletionProvider<CompletionParameters
         context: ProcessingContext,
         result: CompletionResultSet
     ) {
-        // On privilégie la position dans le fichier original (sans l'identifiant
-        // fictif inséré par la complétion), dont l'arbre PSI est intact.
+        // Position dans le fichier original (sans identifiant fictif) : arbre intact
         val position = parameters.originalPosition ?: parameters.position
-        if (position.containingFile !is KrakenFile) return
-        val project = position.project
+        val file = position.containingFile as? KrakenFile ?: return
+        val prev = prevVisibleLeaf(position)
+
+        val inRuleTarget = isInside(position, KrakenTypes.RULE_TARGET) ||
+                (prev != null && (prev.node?.elementType == KrakenTypes.ON_KW ||
+                        isInside(prev, KrakenTypes.RULE_TARGET)))
 
         when {
             isInside(position, KrakenTypes.DIMENSION_ANNOTATION) -> {
-                // Suggestion "intelligente" : dimensions déclarées dans le projet
-                for (name in KrakenPsiUtil.findDimensionNames(project)) {
+                for (name in KrakenPsiUtil.findDimensionNamesVisible(file)) {
                     result.addElement(
                         LookupElementBuilder.create("\"$name\"")
                             .withPresentableText(name)
@@ -49,15 +53,28 @@ private class KrakenCompletionProvider : CompletionProvider<CompletionParameters
             isInside(position, KrakenTypes.ANNOTATION) -> {
                 addKeywords(result, ANNOTATION_KEYWORDS)
             }
-            isInside(position, KrakenTypes.RULE_TARGET) -> {
-                for (name in KrakenPsiUtil.findContextNames(project)) {
-                    result.addElement(
-                        LookupElementBuilder.create(name).withTypeText("context", true)
-                    )
+            inRuleTarget -> {
+                if (prev != null && prev.node?.elementType == KrakenTypes.DOT) {
+                    // "On Contexte.<caret>" : champs et enfants du contexte
+                    val contextLeaf = prevVisibleLeaf(prev)
+                    val contextName = contextLeaf?.text
+                    if (contextName != null) {
+                        for (field in KrakenPsiUtil.contextFieldNames(file, contextName)) {
+                            result.addElement(
+                                LookupElementBuilder.create(field).withTypeText("field", true)
+                            )
+                        }
+                    }
+                } else {
+                    for (name in KrakenPsiUtil.findContextNamesVisible(file)) {
+                        result.addElement(
+                            LookupElementBuilder.create(name).withTypeText("context", true)
+                        )
+                    }
                 }
             }
             isInside(position, KrakenTypes.ENTRY_POINT_DECL) -> {
-                for (rule in KrakenPsiUtil.findRules(project)) {
+                for (rule in KrakenPsiUtil.findRulesVisible(file)) {
                     val name = rule.name ?: continue
                     result.addElement(
                         LookupElementBuilder.create("\"$name\"")
@@ -90,6 +107,16 @@ private class KrakenCompletionProvider : CompletionProvider<CompletionParameters
         return false
     }
 
+    private fun prevVisibleLeaf(element: PsiElement): PsiElement? {
+        var current = PsiTreeUtil.prevLeaf(element)
+        while (current != null &&
+            (current is PsiWhiteSpace || current is PsiComment || current.textLength == 0)
+        ) {
+            current = PsiTreeUtil.prevLeaf(current)
+        }
+        return current
+    }
+
     companion object {
         private val TOP_LEVEL_KEYWORDS = listOf(
             "Rule", "Rules", "EntryPoint", "EntryPoints",
@@ -110,6 +137,7 @@ private class KrakenCompletionProvider : CompletionProvider<CompletionParameters
 
         private val ANNOTATION_KEYWORDS = listOf(
             "Dimension", "ServerSideOnly", "NotStrict", "ForbidTarget", "ForbidReference"
+   
         )
     }
 }

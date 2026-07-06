@@ -1,0 +1,20 @@
+// Contextes et dimensions du namespace Policy.
+// "Include Base" rend les règles du namespace Base visibles ici.
+Namespace Policy
+
+Include Base
+
+Root Context Policy Is BaseEntity {
+    String policyCd
+    String state
+    Date effectiveDate
+    Child AddressInfo
+}
+
+Context AddressInfo {
+    String postalCode
+    String state
+}
+
+Dimension "state" : String
+Dimension "plan" : String

@@ -1,0 +1,11 @@
+// Namespace "Base" : inclus par Policy (voir policy-contexts.rules)
+Namespace Base
+
+Context BaseEntity {
+    String id
+}
+
+Rule "Base sanity check" On BaseEntity.id {
+    Set Mandatory
+    Error "base_id_mandatory" : "L'identifiant est obligatoire"
+}

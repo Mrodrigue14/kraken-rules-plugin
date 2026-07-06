@@ -1,0 +1,11 @@
+// Namespace volontairement NON inclus par Policy : sa règle est invisible
+// depuis policy-entrypoints.rules (démo de la résolution par namespace).
+Namespace Other
+
+Context Widget {
+    String name
+}
+
+Rule "Hidden elsewhere" On Widget.name {
+    Set Hidden
+}

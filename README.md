@@ -22,6 +22,13 @@ Support du DSL Kraken `.rules` ([eisgroup/kraken-rules](https://github.com/eisgr
 - **Intention** : *Add missing 'On' clause* (Alt+Entrée dans une règle sans cible)
 - **Navigation** : Ctrl+B / Ctrl+clic depuis un nom de règle dans un `EntryPoint` vers la déclaration `Rule` ; Find Usages.
 - **Renommage** : renommer une `Rule` (Maj+F6) met à jour ses références dans les `EntryPoint`.
+- **Structure View** (Alt+7), **repli de code** et **formateur** (Ctrl+Alt+L).
+- **Live templates** : `rule`, `ep`, `ctx`, `dim` + Tab.
+- **Complétion des champs** après `On Contexte.` (héritage `Is` et `Child` compris).
+- **Résolution par namespace** : `Namespace`/`Include` délimitent la visibilité des règles.
+- **Quick documentation** (Ctrl+Q) sur les règles ; icône de gouttière vers les EntryPoints référents.
+- **6 inspections** : règle sans nom, référence inconnue, contexte inconnu, règles dupliquées, règle jamais référencée, dimension non déclarée.
+- Voir [ROADMAP.md](ROADMAP.md) pour la suite (grammaire KEL typée, runner, stub index).
 
 ## Prérequis
 
@@ -38,7 +45,7 @@ Support du DSL Kraken `.rules` ([eisgroup/kraken-rules](https://github.com/eisgr
 ./gradlew buildPlugin
 ```
 
-Le plugin empaqueté se trouve dans `build/distributions/kraken-rules-plugin-0.1.0.zip`.
+Le plugin empaqueté se trouve dans `build/distributions/kraken-rules-plugin-0.2.0.zip`.
 
 > 💡 Pas envie de builder ? Chaque push sur `main` produit le zip automatiquement
 > sur GitHub Actions — voir [Récupérer un build depuis GitHub Actions](#récupérer-un-build-depuis-github-actions).
@@ -61,13 +68,14 @@ chmod +x gradlew
 ./gradlew buildPlugin
 ```
 
-Le zip est généré au même endroit : `build/distributions/kraken-rules-plugin-0.1.0.zip`.
+Le zip est généré au même endroit : `build/distributions/kraken-rules-plugin-0.2.0.zip`.
 Pour tester dans un IDE sandbox : `./gradlew runIde`.
 
 ### Autres tâches utiles
 
 ```bash
-.\gradlew.bat runIde     # lance un IntelliJ sandbox avec le plugin (tester examples/demo.rules)
+.\gradlew.bat runIde     # lance un IntelliJ sandbox avec le plugin (tester examples/demo.rules
+                         # et le mini-projet multi-fichiers examples/multi/ — voir TESTING.md)
 .\gradlew.bat test       # tests unitaires (parser, complétion, inspections, navigation, renommage)
 .\gradlew.bat generateKrakenParser   # (re)génère le parser depuis src/main/bnf/Kraken.bnf
 ```
@@ -76,8 +84,10 @@ Pour tester dans un IDE sandbox : `./gradlew runIde`.
 
 1. `.\gradlew.bat buildPlugin`
 2. Dans IntelliJ : *Settings → Plugins → ⚙ → Install Plugin from Disk…*
-3. Sélectionner `build/distributions/kraken-rules-plugin-0.1.0.zip`
-4. Redémarrer l'IDE et ouvrir un fichier `.rules` (par ex. `examples/demo.rules`)
+3. Sélectionner `build/distributions/kraken-rules-plugin-0.2.0.zip`
+4. Redémarrer l'IDE et ouvrir un fichier `.rules` (par ex. `examples/demo.rules`,
+   ou le mini-projet `examples/multi/` pour tester la navigation inter-fichiers —
+   checklist complète dans [TESTING.md](TESTING.md))
 
 ## Architecture
 
@@ -104,9 +114,8 @@ du repo kraken-rules. Elle est volontairement **plus tolérante** que l'original
 
 ## Limitations connues (v0.1.0)
 
-- Pas de résolution inter-namespace (`Include` / `Import Rule … From …` sont parsés
-  mais les références sont résolues sur l'ensemble du projet, sans tenir compte
-  des espaces de noms).
+- `Import Rule … From …` est parsé mais n'affine pas encore la résolution
+  (la visibilité est calculée au niveau des namespaces via `Include`).
 - Les expressions KEL ne sont pas validées (pas de type-checking).
 - Les bornes génériques de `Function` (`<T is SomeType>`) sont supportées
   syntaxiquement mais sans sémantique.
@@ -155,7 +164,7 @@ Les zips du plugin buildés par la CI sont téléchargeables sans rien installer
 2. Cliquer sur le dernier run vert du workflow **Build**
 3. Descendre à la section **Artifacts** → télécharger `kraken-rules-plugin`
 4. ⚠️ GitHub emballe l'artefact dans un zip supplémentaire : **extraire**
-   `kraken-rules-plugin.zip` pour obtenir `kraken-rules-plugin-0.1.0.zip`
+   `kraken-rules-plugin.zip` pour obtenir `kraken-rules-plugin-0.2.0.zip`
    (le nom du plugin contient toujours le numéro de version)
 5. Installer ce zip *intérieur* via *Settings → Plugins → ⚙ → Install Plugin from Disk…*
 

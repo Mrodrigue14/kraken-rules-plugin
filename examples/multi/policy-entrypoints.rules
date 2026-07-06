@@ -1,0 +1,23 @@
+// EntryPoints du namespace Policy, dans un fichier SÉPARÉ des règles.
+// À tester ici :
+//  - Ctrl+clic sur chaque nom → saute vers policy-rules.rules ou base.rules
+//  - Ctrl+Espace dans les accolades → propose les règles visibles
+//  - "Je n'existe pas" → souligné par l'inspection (règle inconnue)
+//  - "Hidden elsewhere" → souligné aussi : le namespace Other n'est pas inclus
+Namespace Policy
+
+EntryPoint "Validation" {
+    "Policy code mandatory",
+    "Effective date past",
+    "Base sanity check"
+}
+
+EntryPoint "Defaults" {
+    "Postal code default",
+    EntryPoint "Validation"
+}
+
+EntryPoint "Broken references demo" {
+    "Je n'existe pas",
+    "Hidden elsewhere"
+}

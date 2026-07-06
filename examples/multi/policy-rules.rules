@@ -1,0 +1,21 @@
+// Règles du namespace Policy — référencées depuis policy-entrypoints.rules
+// (Ctrl+clic sur les noms là-bas doit atterrir ICI).
+Namespace Policy
+
+Rule "Policy code mandatory" On Policy.policyCd {
+    Set Mandatory
+    Error "policy_cd" : "Le code de la police est obligatoire"
+}
+
+@Dimension("state", "CA")
+Rule "Postal code default" On AddressInfo.postalCode {
+    Reset To "90210"
+}
+
+Rule "Effective date past" On Policy.effectiveDate {
+    Description "La date d'effet doit être passée"
+    When Policy.policyCd != null
+    Assert effectiveDate < Today()
+    Error "eff_date" : "La date doit être dans le passé"
+    Overridable
+}

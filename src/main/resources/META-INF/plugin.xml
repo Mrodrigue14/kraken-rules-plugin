@@ -20,6 +20,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.2.0</b>
+        <ul>
+            <li>Structure view, code folding, code formatter and live templates (rule, ep, ctx, dim).</li>
+            <li>Field completion after "On Context." (inheritance-aware).</li>
+            <li>Namespace-aware resolution (Namespace / Include).</li>
+            <li>Gutter icon on rules referenced by entry points.</li>
+            <li>Quick documentation (Ctrl+Q) for rules.</li>
+            <li>New inspections: unknown context, duplicate rule, unused rule, undeclared dimension.</li>
+        </ul>
         <b>0.1.0</b>
         <ul>
             <li>Initial release: syntax highlighting, code completion, inspections,
@@ -96,5 +105,66 @@
             <className>com.kraken.plugin.inspection.KrakenAddOnClauseIntention</className>
             <category>Kraken</category>
         </intentionAction>
+
+        <lang.psiStructureViewFactory
+                language="Kraken"
+                implementationClass="com.kraken.plugin.structure.KrakenStructureViewFactory"/>
+
+        <lang.foldingBuilder
+                language="Kraken"
+                implementationClass="com.kraken.plugin.structure.KrakenFoldingBuilder"/>
+
+        <lang.formatter
+                language="Kraken"
+                implementationClass="com.kraken.plugin.formatter.KrakenFormattingModelBuilder"/>
+
+        <codeInsight.lineMarkerProvider
+                language="Kraken"
+                implementationClass="com.kraken.plugin.navigation.KrakenRuleUsagesLineMarkerProvider"/>
+
+        <lang.documentationProvider
+                language="Kraken"
+                implementationClass="com.kraken.plugin.documentation.KrakenDocumentationProvider"/>
+
+        <liveTemplateContext
+                contextId="KRAKEN"
+                implementation="com.kraken.plugin.completion.KrakenTemplateContext"/>
+        <defaultLiveTemplates file="/liveTemplates/Kraken"/>
+
+        <localInspection
+                language="Kraken"
+                shortName="KrakenUnknownContext"
+                displayName="Unknown context in 'On' clause"
+                groupName="Kraken"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="com.kraken.plugin.inspection.KrakenUnknownContextInspection"/>
+
+        <localInspection
+                language="Kraken"
+                shortName="KrakenDuplicateRule"
+                displayName="Duplicate rule without differentiating dimension"
+                groupName="Kraken"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="com.kraken.plugin.inspection.KrakenDuplicateRuleInspection"/>
+
+        <localInspection
+                language="Kraken"
+                shortName="KrakenUnusedRule"
+                displayName="Rule not referenced by any entry point"
+                groupName="Kraken"
+                enabledByDefault="true"
+                level="WEAK WARNING"
+                implementationClass="com.kraken.plugin.inspection.KrakenUnusedRuleInspection"/>
+
+        <localInspection
+                language="Kraken"
+                shortName="KrakenUndeclaredDimension"
+                displayName="Undeclared dimension in @Dimension annotation"
+                groupName="Kraken"
+                enabledByDefault="true"
+                level="WEAK WARNING"
+                implementationClass="com.kraken.plugin.inspection.KrakenUndeclaredDimensionInspection"/>
     </extensions>
 </idea-plugin>

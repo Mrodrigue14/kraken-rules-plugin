@@ -1,16 +1,36 @@
 package com.kraken.plugin.psi
 
+import com.intellij.lang.ASTNode
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.PsiWhiteSpace
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.PsiTreeUtil
 import com.kraken.plugin.lang.KrakenFile
 import com.kraken.plugin.lang.KrakenFileType
 import com.kraken.plugin.parser.KrakenTypes
 
 object KrakenPsiUtil {
+
+    /** Tokens acceptés comme identifiants (miroir de la règle `id` du BNF). */
+    @JvmField
+    val ID_TOKENS: TokenSet = TokenSet.create(
+        KrakenTypes.IDENTIFIER,
+        KrakenTypes.ON_KW, KrakenTypes.FROM_KW, KrakenTypes.TO_KW,
+        KrakenTypes.MIN_KW, KrakenTypes.MAX_KW, KrakenTypes.STEP_KW,
+        KrakenTypes.SIZE_KW, KrakenTypes.LENGTH_KW, KrakenTypes.NUMBER_KW,
+        KrakenTypes.EMPTY_KW, KrakenTypes.MANDATORY_KW, KrakenTypes.DISABLED_KW,
+        KrakenTypes.HIDDEN_KW, KrakenTypes.DESCRIPTION_KW, KrakenTypes.PRIORITY_KW,
+        KrakenTypes.EXTERNAL_KW, KrakenTypes.CHILD_KW, KrakenTypes.ROOT_KW,
+        KrakenTypes.SYSTEM_KW, KrakenTypes.CONTEXT_KW, KrakenTypes.DIMENSION_KW,
+        KrakenTypes.FUNCTION_KW, KrakenTypes.MATCHES_KW, KrakenTypes.INCLUDE_KW,
+        KrakenTypes.NAMESPACE_KW, KrakenTypes.ERROR_KW, KrakenTypes.WARN_KW,
+        KrakenTypes.INFO_KW
+    )
 
     fun unquote(text: String): String {
         if (text.length >= 2) {
@@ -26,11 +46,83 @@ object KrakenPsiUtil {
         FileTypeIndex.getFiles(KrakenFileType, GlobalSearchScope.projectScope(project))
             .mapNotNull { PsiManager.getInstance(project).findFile(it) as? KrakenFile }
 
+    // ------------------------------------------------------------------
+    // Espaces de noms : Namespace X + Include Y
+    // ------------------------------------------------------------------
+
+    fun namespaceOf(file: KrakenFile): String? =
+        file.node.findChildByType(KrakenTypes.NAMESPACE_DECL)
+            ?.findChildByType(KrakenTypes.QUALIFIED_NAME)?.text?.trim()
+
+    fun includesOf(file: KrakenFile): List<String> =
+        file.node.getChildren(TokenSet.create(KrakenTypes.INCLUDE_DECL))
+            .mapNotNull { it.findChildByType(KrakenTypes.QUALIFIED_NAME)?.text?.trim() }
+
+    /**
+     * Fichiers visibles depuis [from] : même namespace, namespaces inclus
+     * (transitivement) et fichiers sans namespace. Un fichier sans namespace
+     * voit tout le projet.
+     */
+    fun visibleFiles(from: PsiFile?): List<KrakenFile> {
+        val fromKraken = from as? KrakenFile ?: return emptyList()
+        val all = krakenFiles(fromKraken.project)
+        val result: List<KrakenFile>
+        val ns = namespaceOf(fromKraken)
+        if (ns == null) {
+            result = all
+        } else {
+            val filesByNs = HashMap<String?, MutableList<KrakenFile>>()
+            val nsIncludes = HashMap<String, MutableSet<String>>()
+            for (f in all) {
+                val n = namespaceOf(f)
+                filesByNs.getOrPut(n) { mutableListOf() }.add(f)
+                if (n != null) {
+                    nsIncludes.getOrPut(n) { mutableSetOf() }.addAll(includesOf(f))
+                }
+            }
+            nsIncludes.getOrPut(ns) { mutableSetOf() }.addAll(includesOf(fromKraken))
+            val visited = linkedSetOf(ns)
+            val queue = ArrayDeque(listOf(ns))
+            while (queue.isNotEmpty()) {
+                for (inc in nsIncludes[queue.removeFirst()].orEmpty()) {
+                    if (visited.add(inc)) queue.add(inc)
+                }
+            }
+            val collected = mutableListOf<KrakenFile>()
+            for (n in visited) collected.addAll(filesByNs[n].orEmpty())
+            collected.addAll(filesByNs[null].orEmpty())
+            result = collected
+        }
+        // Le fichier courant peut ne pas être indexé (éditeur léger, tests)
+        return if (result.any { it.isEquivalentTo(fromKraken) }) result else result + fromKraken
+    }
+
+    // ------------------------------------------------------------------
+    // Règles
+    // ------------------------------------------------------------------
+
     fun findRules(project: Project): List<KrakenRuleDecl> =
         krakenFiles(project).flatMap { PsiTreeUtil.findChildrenOfType(it, KrakenRuleDecl::class.java) }
 
     fun findRule(project: Project, name: String): KrakenRuleDecl? =
         findRules(project).firstOrNull { it.name == name }
+
+    fun findRulesVisible(from: PsiElement): List<KrakenRuleDecl> =
+        visibleFiles(from.containingFile)
+            .flatMap { PsiTreeUtil.findChildrenOfType(it, KrakenRuleDecl::class.java) }
+
+    fun findRuleVisible(from: PsiElement, name: String): KrakenRuleDecl? =
+        findRulesVisible(from).firstOrNull { it.name == name }
+
+    /** Toutes les références (items d'EntryPoint) portant ce nom, projet entier. */
+    fun findRuleRefs(project: Project, name: String): List<KrakenRuleRef> =
+        krakenFiles(project)
+            .flatMap { PsiTreeUtil.findChildrenOfType(it, KrakenRuleRef::class.java) }
+            .filter { it.ruleName == name }
+
+    // ------------------------------------------------------------------
+    // Dimensions
+    // ------------------------------------------------------------------
 
     fun findDimensionNames(project: Project): List<String> =
         krakenFiles(project)
@@ -38,20 +130,94 @@ object KrakenPsiUtil {
             .mapNotNull { it.dimensionName }
             .distinct()
 
-    fun findContextNames(project: Project): List<String> =
-        krakenFiles(project)
-            .flatMap { file ->
-                PsiTreeUtil.collectElements(file) { it.node?.elementType == KrakenTypes.CONTEXT_DECL }
-                    .mapNotNull { contextName(it) }
-            }
+    fun findDimensionNamesVisible(from: PsiFile?): List<String> =
+        visibleFiles(from)
+            .flatMap { PsiTreeUtil.findChildrenOfType(it, KrakenDimensionDecl::class.java) }
+            .mapNotNull { it.dimensionName }
             .distinct()
 
-    private fun contextName(contextDecl: PsiElement): String? {
+    // ------------------------------------------------------------------
+    // Contextes et champs
+    // ------------------------------------------------------------------
+
+    fun findContextNames(project: Project): List<String> =
+        krakenFiles(project).flatMap { contextDecls(it).mapNotNull { decl -> contextName(decl) } }.distinct()
+
+    fun findContextNamesVisible(from: PsiFile?): List<String> =
+        visibleFiles(from).flatMap { contextDecls(it).mapNotNull { decl -> contextName(decl) } }.distinct()
+
+    fun findContextDecl(from: PsiFile?, name: String): PsiElement? =
+        visibleFiles(from).asSequence()
+            .flatMap { contextDecls(it).asSequence() }
+            .firstOrNull { contextName(it) == name }
+
+    /**
+     * Noms des champs et enfants d'un contexte, héritage (`Is Parent`) compris.
+     */
+    fun contextFieldNames(from: PsiFile?, contextName: String, depth: Int = 0): List<String> {
+        if (depth > 4) return emptyList()
+        val decl = findContextDecl(from, contextName) ?: return emptyList()
+        val names = LinkedHashSet<String>()
+        var child = decl.node.firstChildNode
+        while (child != null) {
+            when (child.elementType) {
+                KrakenTypes.FIELD_DECL -> fieldName(child)?.let { names.add(it) }
+                KrakenTypes.CHILD_DECL -> childContextName(child)?.let { names.add(it) }
+            }
+            child = child.treeNext
+        }
+        val inherited = decl.node.findChildByType(KrakenTypes.INHERITED_CONTEXTS)
+        if (inherited != null) {
+            for (parent in idLeafTexts(inherited)) {
+                names.addAll(contextFieldNames(from, parent, depth + 1))
+            }
+        }
+        return names.toList()
+    }
+
+    fun contextDecls(file: KrakenFile): List<PsiElement> =
+        PsiTreeUtil.collectElements(file) { it.node?.elementType == KrakenTypes.CONTEXT_DECL }.toList()
+
+    fun contextName(contextDecl: PsiElement): String? {
         val keyword = contextDecl.node.findChildByType(KrakenTypes.CONTEXT_KW) ?: return null
-        var node = keyword.treeNext
-        while (node != null && node.psi is com.intellij.psi.PsiWhiteSpace) {
+        var node: ASTNode? = keyword.treeNext
+        while (node != null && node.psi is PsiWhiteSpace) {
             node = node.treeNext
         }
-        return node?.text
+        return if (node != null && node.elementType in ID_TOKENS) node.text else null
+    }
+
+    /** Nom d'un champ : dernier identifiant avant `:` ([External?] Type [*] nom). */
+    private fun fieldName(fieldDecl: ASTNode): String? {
+        var last: String? = null
+        var child = fieldDecl.firstChildNode
+        while (child != null) {
+            if (child.elementType == KrakenTypes.COLON) break
+            if (child.elementType in ID_TOKENS) last = child.text
+            child = child.treeNext
+        }
+        return last
+    }
+
+    /** Nom du contexte enfant : premier identifiant après `Child` [*]. */
+    private fun childContextName(childDecl: ASTNode): String? {
+        var seenChildKw = false
+        var child = childDecl.firstChildNode
+        while (child != null) {
+            if (child.elementType == KrakenTypes.CHILD_KW) seenChildKw = true
+            else if (seenChildKw && child.elementType in ID_TOKENS) return child.text
+            child = child.treeNext
+        }
+        return null
+    }
+
+    private fun idLeafTexts(node: ASTNode): List<String> {
+        val texts = mutableListOf<String>()
+        var child = node.firstChildNode
+        while (child != null) {
+            if (child.elementType in ID_TOKENS) texts.add(child.text)
+            child = child.treeNext
+        }
+        return texts
     }
 }

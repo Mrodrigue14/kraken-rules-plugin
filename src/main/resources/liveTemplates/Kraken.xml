@@ -1,0 +1,33 @@
+<templateSet group="Kraken">
+  <template name="rule" value="Rule &quot;$NAME$&quot; On $CONTEXT$.$FIELD$ {&#10;    $END$&#10;}"
+            description="Kraken rule declaration" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="&quot;name&quot;" alwaysStopAt="true"/>
+    <variable name="CONTEXT" expression="" defaultValue="&quot;Context&quot;" alwaysStopAt="true"/>
+    <variable name="FIELD" expression="" defaultValue="&quot;field&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="KRAKEN" value="true"/>
+    </context>
+  </template>
+  <template name="ep" value="EntryPoint &quot;$NAME$&quot; {&#10;    $END$&#10;}"
+            description="Kraken entry point" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="&quot;name&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="KRAKEN" value="true"/>
+    </context>
+  </template>
+  <template name="ctx" value="Context $NAME$ {&#10;    $END$&#10;}"
+            description="Kraken context" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="&quot;Name&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="KRAKEN" value="true"/>
+    </context>
+  </template>
+  <template name="dim" value="Dimension &quot;$NAME$&quot; : $TYPE$"
+            description="Kraken dimension declaration" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue="&quot;name&quot;" alwaysStopAt="true"/>
+    <variable name="TYPE" expression="" defaultValue="&quot;String&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="KRAKEN" value="true"/>
+    </context>
+  </template>
+</templateSet>

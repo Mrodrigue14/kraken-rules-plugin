@@ -8,10 +8,10 @@ class KrakenRuleReference(element: KrakenRuleRef) :
     PsiReferenceBase<KrakenRuleRef>(element, rangeInside(element)) {
 
     override fun resolve(): PsiElement? =
-        KrakenPsiUtil.findRule(element.project, element.ruleName)
+        KrakenPsiUtil.findRuleVisible(element, element.ruleName)
 
     override fun getVariants(): Array<Any> =
-        KrakenPsiUtil.findRules(element.project)
+        KrakenPsiUtil.findRulesVisible(element)
             .mapNotNull { it.name }
             .distinct()
             .toTypedArray()
