@@ -25,15 +25,10 @@ class KrakenRuleDecl : StubBasedPsiElementBase<KrakenRuleStub>,
 
     constructor(stub: KrakenRuleStub, nodeType: IStubElementType<*, *>) : super(stub, nodeType)
 
-    override fun getElementType(): IStubElementType<*, *> {
-        val stub = this.stub
-        @Suppress("UNCHECKED_CAST")
-        return if (stub != null) {
-            stub.stubType as IStubElementType<*, *>
-        } else {
-            node.elementType as IStubElementType<*, *>
-        }
-    }
+    // getElementType() is intentionally NOT overridden: StubBasedPsiElementBase
+    // already resolves it from the stub (when present) or the node, and its own
+    // override satisfies the StubBasedPsiElement contract. Re-implementing it
+    // here only reintroduced deprecated getElementType()/getStubType() usages.
 
     override fun toString(): String = "KrakenRuleDecl"
 

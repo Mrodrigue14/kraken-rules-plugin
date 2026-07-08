@@ -20,6 +20,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.5.3</b>
+        <ul>
+            <li>Fixed false-positive syntax errors on KEL type casts:
+            "(Type) value", including the chained form "((Type) expr).field".</li>
+            <li>Removed deprecated IntelliJ stub API usages
+            (StubBasedPsiElementBase.getElementType / StubElement.getStubType).</li>
+            <li>README translated to English.</li>
+        </ul>
         <b>0.5.2</b>
         <ul>
             <li>Strict namespace semantics for reverse references: gutter icons,
