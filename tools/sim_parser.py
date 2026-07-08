@@ -173,7 +173,11 @@ define('bracket_access', seqp(1, 'bracket_access', alt(tk('LBRACKET'),tk('QLBRAC
 define('postfix_part', alt(seq(alt(tk('DOT'),tk('QDOT')),R('path_segment')),R('bracket_access')))
 define('postfix_expr', seq(R('primary_expr'),many(R('postfix_part'))))
 define('prefix_op', alt(tk('OP'),tk('NOT_KW')))
-define('simple_operand', seq(many(R('prefix_op')),R('postfix_expr')))
+# KEL type cast: "(TypeName) value" -- cast target is a postfix_expr (no leading
+# binary op), so "(a + b) - c" is never mistaken for a cast and falls back to
+# group_expr. seq() backtracks cleanly on failure (no false positive emitted).
+define('cast_expr', seq(tk('LPAREN'),R('type_ref'),tk('RPAREN'),R('postfix_expr')))
+define('simple_operand', seq(many(R('prefix_op')),alt(R('cast_expr'),R('postfix_expr'))))
 define('if_expr', seqp(1, 'if_expr', tk('IF_KW'),R('expression'),tk('THEN_KW'),R('expression'),opt(seq(tk('ELSE_KW'),R('expression')))))
 define('for_expr', seqp(1, 'for_expr', tk('FOR_KW'),R('id'),tk('IN_KW'),R('expression'),tk('RETURN_KW'),R('expression')))
 define('quantifier_expr', seqp(1, 'quantifier_expr', alt(tk('EVERY_KW'),tk('SOME_KW')),R('id'),

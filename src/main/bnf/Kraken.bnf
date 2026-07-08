@@ -272,8 +272,15 @@ private expr_operand ::= if_expr | for_expr | quantifier_expr | simple_operand
 if_expr ::= IF_KW expression THEN_KW expression (ELSE_KW expression)? {pin=1}
 for_expr ::= FOR_KW id IN_KW expression RETURN_KW expression {pin=1}
 quantifier_expr ::= (EVERY_KW | SOME_KW) id (IN_KW expression)? (SATISFIES_KW expression)? {pin=1}
-private simple_operand ::= prefix_op* postfix_expr
+private simple_operand ::= prefix_op* (cast_expr | postfix_expr)
 private prefix_op ::= OP | NOT_KW
+
+// KEL type cast: "(TypeName) value" (e.g. ((CoverageSubtype)currentCov).field).
+// The cast target is a postfix_expr (reference/call/group + .[] chains) but NOT
+// a full binary expression, so a plain grouping followed by an operator
+// ("(a + b) - c") never matches here and falls back to group_expr.
+cast_expr ::= LPAREN type_ref RPAREN cast_target
+private cast_target ::= postfix_expr
 
 postfix_expr ::= primary_expr postfix_part*
 private postfix_part ::= dot_access | bracket_access

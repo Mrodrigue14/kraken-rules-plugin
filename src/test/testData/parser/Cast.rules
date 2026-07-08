@@ -1,0 +1,33 @@
+Namespace CastTest
+
+// Regression coverage for KEL type casts "(TypeName) value".
+// These constructs previously produced false-positive syntax errors.
+
+Rule "comprehensive deductible" On AutoVehicleRiskItemDgig.deductibleAmountDgig {
+    When IsSelected(AutoVehicleRiskItemDgig.coverages, "AutoComprehensiveCoverageDgig")
+         && ((AutoComprehensiveCoverageDgig)currentCov).deductibleAmountDgig != null
+    Assert true
+}
+
+Rule "trailer tracting vehicle" On AutoPolicySummaryDgig.valid {
+    When vehicleTypeDgig = "CommercialVehicle" && IsTrue(rsPCessionIndicatorDgig)
+    Assert some riskItem in AutoPolicySummaryDgig.blob.lobs[*].riskItems satisfies
+           ((TrailerDgig)(riskItem.vehicleBaseDetails.vehicleDescription)).tractingVehicle != null
+}
+
+Rule "cast without wrapping parens" On Policy.a {
+    Assert (SubCoverage)cov.limitAmount > 0
+}
+
+Rule "cast of grouped expression" On Policy.b {
+    Assert ((Trailer)(item.vehicle.desc)).tractor != null
+}
+
+// Disambiguation: plain grouping must NOT be treated as a cast.
+Rule "grouping stays grouping" On Policy.c {
+    Assert (Policy.base + Policy.bonus) - Policy.fee > 0
+}
+
+Rule "group then field access" On Policy.d {
+    Assert (Policy.wrapper).innerField != null
+}

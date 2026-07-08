@@ -1,48 +1,53 @@
-# Kraken Rules — Plugin IntelliJ
+# Kraken Rules — IntelliJ Plugin
 
-Support du DSL Kraken `.rules` ([eisgroup/kraken-rules](https://github.com/eisgroup/kraken-rules)) pour IntelliJ IDEA.
+IntelliJ IDEA language support for Kraken `.rules` files
+([eisgroup/kraken-rules](https://github.com/eisgroup/kraken-rules) DSL).
 
-> Plugin communautaire indépendant, sans affiliation avec EIS Group ni approbation
-> de leur part. « Kraken » désigne le moteur open source Kraken Rules (Apache-2.0) ;
-> la grammaire de ce plugin est dérivée de la grammaire ANTLR publiée dans ce repo,
-> conformément à sa licence.
+> Independent community plugin, not affiliated with or endorsed by EIS Group.
+> "Kraken" refers to the open-source Kraken Rules engine (Apache-2.0); this
+> plugin's grammar is derived from the ANTLR grammar published in that
+> repository, in accordance with its license.
 
-## Fonctionnalités
+## Features
 
-- **Coloration syntaxique** : mots-clés, chaînes, nombres, commentaires (`//`, `/* */`, `/** */`), annotations `@Dimension`, opérateurs. Personnalisable dans *Settings → Editor → Color Scheme → Kraken Rules*.
-- **Complétion de code** (Ctrl+Espace), sensible au contexte :
-  - haut de fichier : `Rule`, `EntryPoint`, `Context`, `Namespace`, `Dimension`, `Function`…
-  - corps de règle : `Assert`, `Set Mandatory`, `Default To`, `Reset To`, `When`, `Priority`, `Error`…
-  - dans `@Dimension(...)` : les dimensions déclarées dans le projet
-  - après `On` : les noms de contextes déclarés
-  - dans un `EntryPoint { ... }` : règles et autres EntryPoints visibles (avec icônes
-    et fichier d'origine), sans les items déjà listés ni l'EntryPoint courant
-- **Inspections** :
-  - `Rule` sans nom (erreur)
-  - référence de règle introuvable dans un `EntryPoint` (avertissement)
-- **Intention** : *Add missing 'On' clause* (Alt+Entrée dans une règle sans cible)
-- **Navigation** : Ctrl+B / Ctrl+clic dans les deux sens — d'un item
-  d'EntryPoint vers la déclaration, et du nom d'une `Rule`/`EntryPoint` vers
-  les EntryPoints qui la référencent (popup si plusieurs) ; Find Usages
-  (y compris noms multi-mots) ; icônes de gouttière.
-- **Renommage** : renommer une `Rule` ou un `EntryPoint` (Maj+F6) met à jour toutes leurs références.
-- **Structure View** (Alt+7), **repli de code** et **formateur** (Ctrl+Alt+L).
-- **Live templates** : `rule`, `ep`, `ctx`, `dim` + Tab.
-- **Complétion des champs** après `On Contexte.` (héritage `Is` et `Child` compris).
-- **Résolution par namespace** : `Namespace`/`Include` délimitent la visibilité
-  dans les deux sens — une référence issue d'un namespace qui ne voit pas la
-  déclaration ne compte ni pour la navigation, ni pour Find Usages, ni pour
-  l'inspection « règle jamais référencée ».
-- **Quick documentation** (Ctrl+Q) sur les règles ; icône de gouttière vers les EntryPoints référents.
-- **6 inspections** : règle sans nom, référence inconnue, contexte inconnu, règles dupliquées, règle jamais référencée, dimension non déclarée.
-- **Index par stubs** : la résolution des règles passe par un index persistant
-  (rapide même sur des centaines de fichiers).
-- Voir [ROADMAP.md](ROADMAP.md) pour la suite (type-checking KEL, runner).
+- **Syntax highlighting**: keywords, strings, numbers, comments (`//`, `/* */`, `/** */`),
+  `@Dimension` annotations, operators. Customizable in
+  *Settings → Editor → Color Scheme → Kraken Rules*.
+- **Code completion** (Ctrl+Space), context-aware:
+  - top level: `Rule`, `EntryPoint`, `Context`, `Namespace`, `Dimension`, `Function`…
+  - rule body: `Assert`, `Set Mandatory`, `Default To`, `Reset To`, `When`, `Priority`, `Error`…
+  - inside `@Dimension(...)`: dimensions declared in the project
+  - after `On`: declared context names
+  - inside an `EntryPoint { ... }`: visible rules and other EntryPoints (with icons
+    and origin file), excluding already-listed items and the current EntryPoint
+- **Field completion** after `On Context.` and inside expressions
+  (`When Policy.<Ctrl+Space>`), including `Is` inheritance and `Child` contexts.
+- **Navigation**: Ctrl+B / Ctrl+click both ways — from an EntryPoint item to the
+  declaration, and from a `Rule`/`EntryPoint` declaration name to the EntryPoints
+  referencing it (popup when several); Find Usages (multi-word names supported);
+  gutter icons on referenced rules and entry points.
+- **Rename refactoring**: renaming a `Rule` or an `EntryPoint` (Shift+F6) updates
+  all of its references.
+- **Namespace-aware resolution**: `Namespace`/`Include` bound visibility in both
+  directions — a reference living in a namespace that cannot see the declaration
+  does not count for navigation, Find Usages, or the unused-rule inspection
+  (mirrors the Kraken engine).
+- **Structure View** (Alt+7), **code folding** and **formatter** (Ctrl+Alt+L).
+- **Live templates**: `rule`, `ep`, `ctx`, `dim` + Tab.
+- **Quick documentation** (Ctrl+Q) on rules: description, target, payloads, dimensions.
+- **Intention**: *Add missing 'On' clause* (Alt+Enter on a rule without a target).
+- **6 inspections**: rule without name, unresolved rule/entry point reference,
+  unknown context, duplicate rules without a differentiating `@Dimension`,
+  rule never referenced by any entry point, undeclared dimension.
+- **Stub-based index**: rule resolution goes through a persistent index —
+  fast even on projects with hundreds of `.rules` files.
+- See [ROADMAP.md](ROADMAP.md) for what's next (KEL type-checking, rule runner).
 
-## Prérequis
+## Requirements
 
-- Internet (le premier build télécharge Gradle, la plateforme IntelliJ ~1 Go et Grammar-Kit)
-- JDK 17 — provisionné automatiquement par Gradle (toolchain + foojay resolver) s'il est absent
+- Internet access (the first build downloads Gradle, the IntelliJ Platform ~1 GB,
+  and Grammar-Kit)
+- JDK 17 — auto-provisioned by Gradle (toolchain + foojay resolver) if missing
 
 ## Build
 
@@ -54,128 +59,138 @@ Support du DSL Kraken `.rules` ([eisgroup/kraken-rules](https://github.com/eisgr
 ./gradlew buildPlugin
 ```
 
-Le plugin empaqueté se trouve dans `build/distributions/kraken-rules-plugin-0.5.2.zip`.
+The packaged plugin is written to `build/distributions/kraken-rules-plugin-0.5.2.zip`.
 
-> 💡 Pas envie de builder ? Chaque push sur `main` produit le zip automatiquement
-> sur GitHub Actions — voir [Récupérer un build depuis GitHub Actions](#récupérer-un-build-depuis-github-actions).
+> 💡 Don't want to build? Every push to `main` produces the zip automatically
+> on GitHub Actions — see [Grabbing a build from GitHub Actions](#grabbing-a-build-from-github-actions).
 
-### Build sur Ubuntu
+### Building on Ubuntu
 
 ```bash
-# 1. Prérequis (JDK 17 + git)
+# 1. Prerequisites (JDK 17 + git)
 sudo apt update && sudo apt install -y openjdk-17-jdk git
 
-# 2. Récupérer les sources
+# 2. Get the sources
 git clone https://github.com/Mrodrigue14/kraken-rules-plugin.git
 cd kraken-rules-plugin
 
-# 3. Rendre le wrapper exécutable (si cloné depuis un commit fait sous Windows)
+# 3. Make the wrapper executable (if cloned from a Windows-made commit)
 chmod +x gradlew
 
-# 4. Tests + build
+# 4. Test + build
 ./gradlew test
 ./gradlew buildPlugin
 ```
 
-Le zip est généré au même endroit : `build/distributions/kraken-rules-plugin-0.5.2.zip`.
-Pour tester dans un IDE sandbox : `./gradlew runIde`.
+The zip lands in the same place: `build/distributions/kraken-rules-plugin-0.5.2.zip`.
+To try it in a sandbox IDE: `./gradlew runIde`.
 
-### Autres tâches utiles
+### Other useful tasks
 
 ```bash
-.\gradlew.bat runIde     # lance un IntelliJ sandbox avec le plugin (tester examples/demo.rules
-                         # et le mini-projet multi-fichiers examples/multi/ — voir TESTING.md)
-.\gradlew.bat test       # tests unitaires (parser, complétion, inspections, navigation, renommage)
-.\gradlew.bat generateKrakenParser   # (re)génère le parser depuis src/main/bnf/Kraken.bnf
+.\gradlew.bat runIde     # launches a sandbox IntelliJ with the plugin (try examples/demo.rules
+                         # and the multi-file sample project examples/multi/ — see TESTING.md)
+.\gradlew.bat test       # unit tests (parser, completion, inspections, navigation, rename)
+.\gradlew.bat generateKrakenParser   # (re)generates the parser from src/main/bnf/Kraken.bnf
 ```
 
 ## Installation
 
 1. `.\gradlew.bat buildPlugin`
-2. Dans IntelliJ : *Settings → Plugins → ⚙ → Install Plugin from Disk…*
-3. Sélectionner `build/distributions/kraken-rules-plugin-0.5.2.zip`
-4. Redémarrer l'IDE et ouvrir un fichier `.rules` (par ex. `examples/demo.rules`,
-   ou le mini-projet `examples/multi/` pour tester la navigation inter-fichiers —
-   checklist complète dans [TESTING.md](TESTING.md))
+2. In IntelliJ: *Settings → Plugins → ⚙ → Install Plugin from Disk…*
+3. Select `build/distributions/kraken-rules-plugin-0.5.2.zip`
+4. Restart the IDE and open a `.rules` file (e.g. `examples/demo.rules`, or the
+   multi-file sample project `examples/multi/` to try cross-file navigation —
+   full manual checklist in [TESTING.md](TESTING.md))
 
 ## Architecture
 
 ```
-src/main/bnf/Kraken.bnf          Grammaire Grammar-Kit (génère le parser dans src/main/gen)
+src/main/bnf/Kraken.bnf          Grammar-Kit grammar (parser generated into src/main/gen)
 src/main/kotlin/com/kraken/plugin/
   lang/         Language, FileType, ParserDefinition, Commenter, BraceMatcher
-  parser/       KrakenLexer (lexer manuscrit, insensible à la casse comme l'ANTLR officiel)
-  psi/          Éléments PSI personnalisés (Rule, EntryPoint, références, renommage)
-  highlighter/  Coloration syntaxique + page de configuration des couleurs
-  completion/   Complétion contextuelle
-  inspection/   Inspections + intention "Add missing 'On' clause"
-  navigation/   GotoDeclaration, FindUsages
+  parser/       KrakenLexer (hand-written, case-insensitive like the official ANTLR)
+  psi/          Custom PSI elements (Rule, EntryPoint, references, rename, stubs)
+  highlighter/  Syntax highlighting + color settings page
+  completion/   Context-aware completion + live template context
+  inspection/   Inspections + "Add missing 'On' clause" intention
+  navigation/   GotoDeclaration, FindUsages, gutter line markers, references search
+  structure/    Structure View + code folding
+  formatter/    Code formatter
+  documentation/ Quick documentation (Ctrl+Q)
 ```
 
-La grammaire est dérivée de la grammaire ANTLR officielle (`KrakenDSL.g4`, `Common.g4`)
-du repo kraken-rules. Elle est volontairement **plus tolérante** que l'originale :
+The grammar is derived from the official ANTLR grammar (`KrakenDSL.g4`,
+`Common.g4`, `Value.g4`) of the kraken-rules repository. It is deliberately
+**more tolerant** than the original:
 
-- le nom d'une règle et sa clause `On` sont optionnels au niveau du parser
-  (ce sont les inspections qui signalent leur absence) ;
-- les expressions KEL sont analysées avec une grammaire structurée portée de
-  `Kel.g4`/`Value.g4` (if/then/else, for/return, every/some/satisfies, appels,
-  chaînes d'accès avec filtres `[...]` et spread `[*]`, `?.`/`?[`, `**`,
-  littéraux de collection, blocs `set x to … return …`) — sans type-checking.
+- a rule's name and its `On` clause are optional at the parser level
+  (inspections report their absence instead);
+- KEL expressions are parsed with a structured grammar ported from
+  `Kel.g4`/`Value.g4` (if/then/else, for/return, every/some/satisfies, calls,
+  access chains with filters `[...]` and spread `[*]`, `?.`/`?[`, `**`,
+  type casts `(Type) expr`, collection literals, `set x to … return …` variable
+  blocks) — no type-checking.
 
-## Limitations connues (v0.1.0)
+## Known limitations
 
-- `Import Rule … From …` est parsé mais n'affine pas encore la résolution
-  (la visibilité est calculée au niveau des namespaces via `Include`).
-- Les expressions KEL sont parsées structurellement mais pas typées (pas de type-checking).
-- Les bornes génériques de `Function` (`<T is SomeType>`) sont supportées
-  syntaxiquement mais sans sémantique.
+- `Import Rule … From …` is parsed but does not refine resolution yet
+  (visibility is computed at the namespace level through `Include`).
+- KEL expressions are parsed structurally but not typed (no type-checking).
+- `Function` generic bounds (`<T is SomeType>`) are supported syntactically
+  but carry no semantics.
 
-## Validation de la grammaire
+## Grammar validation
 
-La grammaire a été validée contre le corpus complet du repo officiel
-[eisgroup/kraken-rules](https://github.com/eisgroup/kraken-rules) :
-**103/103 fichiers `.rules` réels acceptés** (via `tools/sim_parser.py`,
-une simulation PEG du parser Grammar-Kit).
+The grammar has been validated against the complete corpus of the official
+[eisgroup/kraken-rules](https://github.com/eisgroup/kraken-rules) repository:
+**103/103 real `.rules` files accepted** (via `tools/sim_parser.py`, a Python
+simulation of the Grammar-Kit parser that also emulates pin semantics).
 
 ```bash
-python3 tools/validate.py      # cohérence plugin.xml / BNF / lexer / KrakenTypes
-python3 tools/sim_parser.py    # parse les fichiers de test avec la grammaire simulée
-python3 tools/sim_parser.py chemin/vers/fichier.rules   # tester un fichier à toi
+python3 tools/validate.py      # plugin.xml / BNF / lexer / KrakenTypes consistency
+python3 tools/sim_parser.py    # parses the test files with the simulated grammar
+python3 tools/sim_parser.py path/to/your/file.rules   # try one of your own files
 ```
 
-Constructions couvertes : `Namespace`/`Include`/`Import Rule … From`,
-`Context(s)` (héritage `Is`, champs, `Child *X : {a, b}`), `ExternalContext` /
-`ExternalEntity`, `Rule(s)` (Description, Priority, When, tous les payloads :
+Covered constructs: `Namespace`/`Include`/`Import Rule … From`, `Context(s)`
+(`Is` inheritance, fields, `Child *X : {a, b}`), `ExternalContext` /
+`ExternalEntity`, `Rule(s)` (Description, Priority, When, every payload:
 Assert / Assert Matches / Length / Size / Number Min Max Step / In,
-Set Mandatory/Hidden/Disabled, Default/Reset To, messages Error/Warn/Info,
-Overridable), `EntryPoint(s)` (imbriqués, références), `Dimension`, `Function`
-(génériques, corps KEL), annotations `@Dimension` / `@ServerSideOnly` /
-`@NotStrict` / `@ForbidTarget` / `@ForbidReference`, littéraux date/datetime
-(`2020-01-01T00:00:00Z`), chaînes multi-lignes avec templates `${...}`,
-mots-clés utilisables comme identifiants (`info`, `to`, `context`, …).
+Set Mandatory/Hidden/Disabled, Default/Reset To, Error/Warn/Info messages,
+Overridable), `EntryPoint(s)` (nested, references), `Dimension`, `Function`
+(generics, KEL bodies), `@Dimension` / `@ServerSideOnly` / `@NotStrict` /
+`@ForbidTarget` / `@ForbidReference` annotations, type casts (`(Type) expr`, incl. chained `((Type) expr).field`),
+date/datetime literals (`2020-01-01T00:00:00Z`), multi-line strings with `${...}` templates,
+keywords usable as identifiers (`info`, `to`, `context`, …).
 
-## Intégration continue
+## Continuous integration
 
-Le workflow GitHub Actions `.github/workflows/build.yml` build et teste le plugin
-sur **Ubuntu** (ubuntu-latest, JDK 17 Temurin, cache Gradle) :
+The GitHub Actions workflow `.github/workflows/build.yml` builds and tests the
+plugin on **Ubuntu** (ubuntu-latest, JDK 17 Temurin, Gradle cache):
 
-- à chaque **push** sur `main` ;
-- à chaque **pull request** vers `main` ;
-- **manuellement** : onglet *Actions* → workflow *Build* → bouton *Run workflow*.
+- on every **push** to `main`;
+- on every **pull request** targeting `main`;
+- **manually**: *Actions* tab → *Build* workflow → *Run workflow* button.
 
-Étapes exécutées : `test` → `buildPlugin` → `verifyPluginConfiguration` →
-publication du zip en artefact (et du rapport de tests en cas d'échec).
+Steps: `test` → `buildPlugin` → `verifyPluginConfiguration` → upload of the
+zip as a build artifact (and of the test report on failure).
 
-### Récupérer un build depuis GitHub Actions
+### Grabbing a build from GitHub Actions
 
-Les zips du plugin buildés par la CI sont téléchargeables sans rien installer :
+CI-built plugin zips can be downloaded without installing anything:
 
-1. Ouvrir <https://github.com/Mrodrigue14/kraken-rules-plugin/actions>
-2. Cliquer sur le dernier run vert du workflow **Build**
-3. Descendre à la section **Artifacts** → télécharger `kraken-rules-plugin`
-4. ⚠️ GitHub emballe l'artefact dans un zip supplémentaire : **extraire**
-   `kraken-rules-plugin.zip` pour obtenir `kraken-rules-plugin-0.5.2.zip`
-   (le nom du plugin contient toujours le numéro de version)
-5. Installer ce zip *intérieur* via *Settings → Plugins → ⚙ → Install Plugin from Disk…*
+1. Open <https://github.com/Mrodrigue14/kraken-rules-plugin/actions>
+2. Click the latest green run of the **Build** workflow
+3. Scroll to the **Artifacts** section → download `kraken-rules-plugin`
+4. ⚠️ GitHub wraps artifacts in an extra zip: **extract**
+   `kraken-rules-plugin.zip` to get `kraken-rules-plugin-0.5.2.zip`
+   (the plugin's name always contains the version number)
+5. Install that *inner* zip via *Settings → Plugins → ⚙ → Install Plugin from Disk…*
 
-Les artefacts sont conservés 90 jours par défaut.
+Artifacts are kept for 90 days by default.
+
+## License
+
+[Apache-2.0](LICENSE). The grammar is derived from the Apache-2.0 licensed
+[eisgroup/kraken-rules](https://github.com/eisgroup/kraken-rules) project.

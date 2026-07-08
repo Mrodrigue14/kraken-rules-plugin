@@ -22,4 +22,6 @@ class KrakenParsingTest : ParsingTestCase("", "rules", KrakenParserDefinition())
     fun testKel() = doTest(false, true)
 
     fun testPinRegression() = doTest(false, true)
+
+    fun testCast() = doTest(false, true)
 }
