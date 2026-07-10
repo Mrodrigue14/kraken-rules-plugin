@@ -1,0 +1,26 @@
+Kraken Rules IntelliJ Plugin
+Copyright 2026 Miguel Rodrigue (github.com/Mrodrigue14)
+
+This product is licensed under the Functional Source License, Version 1.1
+(ALv2 Future License) — see the LICENSE file.
+
+------------------------------------------------------------------------------
+Third-party attribution
+------------------------------------------------------------------------------
+
+This plugin's grammar (src/main/bnf/Kraken.bnf) and the structure of its KEL
+expression parser are derived from the ANTLR grammars (KrakenDSL.g4,
+Common.g4, Value.g4) published in the open-source project:
+
+    eisgroup/kraken-rules — https://github.com/eisgroup/kraken-rules
+    Copyright EIS Group and contributors
+    Licensed under the Apache License, Version 2.0
+
+A copy of the Apache License, Version 2.0, applicable to those derived
+portions, is included in the file LICENSE-APACHE-2.0 and is also available at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+This is an independent community plugin. It is not affiliated with, endorsed
+by, or sponsored by EIS Group. "Kraken" refers to the open-source Kraken Rules
+engine and is used here only to describe compatibility.

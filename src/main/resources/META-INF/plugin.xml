@@ -20,7 +20,7 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <b>0.5.3</b>
+        <b>0.5.4</b>
         <ul>
             <li>Fixed false-positive syntax errors on KEL type casts:
             "(Type) value", including the chained form "((Type) expr).field".</li>

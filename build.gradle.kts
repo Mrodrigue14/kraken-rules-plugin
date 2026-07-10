@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.kraken.plugin"
-version = "0.5.3"
+version = "0.5.4"
 
 repositories {
     mavenCentral()
