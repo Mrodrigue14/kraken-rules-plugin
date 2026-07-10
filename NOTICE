@@ -17,7 +17,8 @@ Common.g4, Value.g4) published in the open-source project:
     Licensed under the Apache License, Version 2.0
 
 A copy of the Apache License, Version 2.0, applicable to those derived
-portions, is included in the file LICENSE-APACHE-2.0 and is also available at:
+portions, is included in the file third_party/Apache-2.0.txt and is also
+available at:
 
     http://www.apache.org/licenses/LICENSE-2.0
 

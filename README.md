@@ -201,6 +201,7 @@ available under the Apache License, Version 2.0.
 The grammar (`src/main/bnf/Kraken.bnf`) is derived from the Apache-2.0 licensed
 [eisgroup/kraken-rules](https://github.com/eisgroup/kraken-rules) project; the
 Apache-2.0 terms for those portions are preserved in
-[`LICENSE-APACHE-2.0`](LICENSE-APACHE-2.0) and attributed in [`NOTICE`](NOTICE).
+[`third_party/Apache-2.0.txt`](third_party/Apache-2.0.txt) and attributed in
+[`NOTICE`](NOTICE).
 This is an independent community plugin, not affiliated with or endorsed by EIS
 Group.
