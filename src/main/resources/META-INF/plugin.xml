@@ -21,6 +21,13 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.5.6</b>
+        <ul>
+            <li>Fixed copy-paste and reformat destroying the indentation of
+            multi-line KEL expressions (if/then/else continuation lines were
+            flattened): the formatter now preserves manual indentation inside
+            expressions.</li>
+        </ul>
         <b>0.5.5</b>
         <ul>
             <li>Fixed false-positive syntax errors on KEL type casts:

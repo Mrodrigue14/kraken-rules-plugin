@@ -38,6 +38,11 @@ class KrakenBlock(
     override fun getIndent(): Indent = indent
 
     override fun buildChildren(): List<Block> {
+        // Les expressions KEL n'ont pas encore de règles de mise en page :
+        // on les traite comme des blocs opaques pour que le formateur (et le
+        // "Reformat on paste" de l'IDE) préserve l'indentation manuelle de
+        // leurs lignes de continuation au lieu de les aplatir.
+        if (myNode.elementType == KrakenTypes.EXPRESSION) return emptyList()
         val blocks = mutableListOf<Block>()
         var child = myNode.firstChildNode
         var seenLBrace = false
@@ -64,7 +69,8 @@ class KrakenBlock(
 
     override fun getSpacing(child1: Block?, child2: Block): Spacing? = null
 
-    override fun isLeaf(): Boolean = myNode.firstChildNode == null
+    override fun isLeaf(): Boolean =
+        myNode.firstChildNode == null || myNode.elementType == KrakenTypes.EXPRESSION
 
     override fun getChildAttributes(newChildIndex: Int): ChildAttributes =
         if (myNode.elementType in BRACE_OWNERS) {
