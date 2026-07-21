@@ -6,6 +6,7 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.25"
     id("org.jetbrains.intellij") version "1.17.4"
     id("org.jetbrains.grammarkit") version "2022.3.2.2"
+    id("org.owasp.dependencycheck") version "12.2.2"
 }
 
 group = "com.kraken.plugin"
@@ -27,6 +28,27 @@ intellij {
 
 kotlin {
     jvmToolchain(17)
+}
+
+// Analyse des CVE connues dans les dépendances réellement livrées (base NVD).
+//
+// On ne scanne que `runtimeClasspath` — c'est-à-dire ce que le plugin embarque
+// dans son zip. La plateforme IntelliJ (netty, commons-lang3, httpcore… tirés
+// par le plugin org.jetbrains.intellij) n'est PAS livrée : elle est fournie par
+// l'IDE hôte à l'exécution et corrigée par JetBrains via les mises à jour de
+// l'IDE. La scanner ferait échouer chaque build sur des CVE hors de notre
+// contrôle. Scoper à runtimeClasspath garde la porte CVSS>=7 pertinente pour
+// toute vraie dépendance embarquée qu'on ajouterait à l'avenir.
+//
+// NVD_API_KEY (secret CI optionnel) accélère la synchro de la base ; sans
+// clé, dependency-check fonctionne mais avec un débit plus limité.
+dependencyCheck {
+    failBuildOnCVSS = 7.0f
+    formats = listOf("HTML", "JUNIT")
+    scanConfigurations = listOf("runtimeClasspath")
+    nvd {
+        apiKey = System.getenv("NVD_API_KEY")
+    }
 }
 
 // Les sources générées par Grammar-Kit sont compilées avec le reste

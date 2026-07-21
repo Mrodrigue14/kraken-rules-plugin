@@ -191,6 +191,31 @@ CI-built plugin zips can be downloaded without installing anything:
 
 Artifacts are kept for 90 days by default.
 
+## Security
+
+RuleScribe is low-risk by construction: it bundles **no third-party runtime
+dependencies** (only a test-scoped JUnit), makes **no network calls**, and
+**executes no user code** — it only parses and inspects `.rules` text. The
+Kotlin standard library and all PSI/UI APIs are supplied by the host IntelliJ
+Platform at runtime.
+
+Automated scanning runs on every push and pull request to `main`:
+
+- **CodeQL** static analysis (`java-kotlin`), plus a weekly scheduled scan
+  (`.github/workflows/codeql.yml`).
+- **OWASP Dependency-Check** against the NVD database, scoped to the plugin's
+  shipped runtime classpath — the build fails on any bundled dependency with a
+  CVSS score ≥ 7.0 (`dependency-check` job in `.github/workflows/build.yml`;
+  run locally with `./gradlew dependencyCheckAnalyze`). The IntelliJ Platform
+  SDK and test-only dependencies are provided by the host IDE, not distributed,
+  and so are out of scope.
+- **Dependabot** keeps Gradle dependencies and GitHub Actions current
+  (`.github/dependabot.yml`).
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). A free
+[NVD API key](https://nvd.nist.gov/developers/request-an-api-key) set as the
+`NVD_API_KEY` repository secret speeds up Dependency-Check runs.
+
 ## License
 
 Licensed under the [PolyForm Shield License 1.0.0](LICENSE) — see `LICENSE`.
