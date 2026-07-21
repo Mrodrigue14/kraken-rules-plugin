@@ -39,16 +39,10 @@ kotlin {
 // l'IDE. La scanner ferait échouer chaque build sur des CVE hors de notre
 // contrôle. Scoper à runtimeClasspath garde la porte CVSS>=7 pertinente pour
 // toute vraie dépendance embarquée qu'on ajouterait à l'avenir.
-//
-// NVD_API_KEY (secret CI optionnel) accélère la synchro de la base ; sans
-// clé, dependency-check fonctionne mais avec un débit plus limité.
 dependencyCheck {
     failBuildOnCVSS = 7.0f
     formats = listOf("HTML", "JUNIT")
     scanConfigurations = listOf("runtimeClasspath")
-    nvd {
-        apiKey = System.getenv("NVD_API_KEY")
-    }
 }
 
 // Les sources générées par Grammar-Kit sont compilées avec le reste

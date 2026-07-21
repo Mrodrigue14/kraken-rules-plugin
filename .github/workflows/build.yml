@@ -69,8 +69,6 @@ jobs:
         run: chmod +x gradlew
 
       - name: Scan des dépendances (échoue si CVE >= 7.0)
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: ./gradlew dependencyCheckAnalyze
 
       - name: Publier le rapport

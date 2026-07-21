@@ -4,8 +4,23 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      gradle-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Major toolchain upgrades (Kotlin, Gradle wrapper, IntelliJ/Grammar-Kit
+      # plugins) require manual migration and break the build if bumped blindly.
+      # Security advisories still surface as Dependabot alerts in the Security tab.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]

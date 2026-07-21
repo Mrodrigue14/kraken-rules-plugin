@@ -212,9 +212,7 @@ Automated scanning runs on every push and pull request to `main`:
 - **Dependabot** keeps Gradle dependencies and GitHub Actions current
   (`.github/dependabot.yml`).
 
-To report a vulnerability, see [SECURITY.md](SECURITY.md). A free
-[NVD API key](https://nvd.nist.gov/developers/request-an-api-key) set as the
-`NVD_API_KEY` repository secret speeds up Dependency-Check runs.
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## License
 
