@@ -37,14 +37,14 @@ jobs:
         run: ./gradlew verifyPluginConfiguration
 
       - name: Publier l'artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rulescribe
           path: build/distributions/*.zip
 
       - name: Rapport de tests (en cas d'échec)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-report
           path: build/reports/tests/test/
@@ -75,7 +75,7 @@ jobs:
 
       - name: Publier le rapport
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-check-report
           path: build/reports/dependency-check-report.html
