@@ -43,6 +43,16 @@ dependencyCheck {
     failBuildOnCVSS = 7.0f
     formats = listOf("HTML", "JUNIT")
     scanConfigurations = listOf("runtimeClasspath")
+
+    // La clé API NVD (secret CI) accélère la synchro de la base. Elle reste
+    // facultative : si le secret est absent ou vide (p. ex. clé expirée puis
+    // retirée), on ne la passe pas et dependency-check bascule sur le mode
+    // sans clé (fonctionnel, juste plus lent) au lieu de casser le build.
+    System.getenv("NVD_API_KEY")?.takeIf { it.isNotBlank() }?.let { key ->
+        nvd {
+            apiKey = key
+        }
+    }
 }
 
 // Les sources générées par Grammar-Kit sont compilées avec le reste

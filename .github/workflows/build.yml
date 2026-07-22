@@ -69,6 +69,11 @@ jobs:
         run: chmod +x gradlew
 
       - name: Scan des dépendances (échoue si CVE >= 7.0)
+        env:
+          # Facultatif : accélère la synchro NVD. Si le secret n'existe pas ou
+          # a expiré, la variable est vide et le build fonctionne sans clé
+          # (voir la condition dans build.gradle.kts).
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: ./gradlew dependencyCheckAnalyze
 
       - name: Publier le rapport
