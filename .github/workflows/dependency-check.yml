@@ -25,16 +25,16 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Setup Gradle (avec cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Rendre gradlew exécutable
         run: chmod +x gradlew
@@ -55,7 +55,7 @@ jobs:
       # une re-sauvegarde de la base mise à jour ; restore-keys récupère le
       # cache le plus récent.
       - name: Cache de la base NVD
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.gradle/dependency-check-data
           key: nvd-${{ runner.os }}-${{ github.run_id }}
@@ -89,7 +89,7 @@ jobs:
 
       - name: Publier le rapport
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-check-report
           path: build/reports/dependency-check-report.html
