@@ -36,8 +36,12 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle (avec cache)
+      - name: Setup Gradle (cache en lecture seule)
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # Ne pas écrire de cache Gradle ici (cf. build.yml seul écrivain) —
+          # préserve le budget de cache pour le cache NVD.
+          cache-read-only: true
 
       - name: Rendre gradlew exécutable
         run: chmod +x gradlew

@@ -33,8 +33,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle (avec cache)
+      - name: Setup Gradle (cache en lecture seule)
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # Ne pas ÉCRIRE de cache Gradle ici : seul build.yml en écrit un.
+          # Évite d'accumuler des caches Gradle multi-Go (SDK IntelliJ) qui
+          # satureraient le budget de 10 Go et évinceraient le cache NVD.
+          cache-read-only: true
 
       - name: Rendre gradlew exécutable
         run: chmod +x gradlew
