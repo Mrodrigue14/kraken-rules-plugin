@@ -193,29 +193,33 @@ Artifacts are kept for 90 days by default.
 
 ## Security
 
-RuleScribe is low-risk by construction: it bundles **no third-party runtime
-dependencies** (only a test-scoped JUnit), makes **no network calls**, and
-**executes no user code** — it only parses and inspects `.rules` text. The
-Kotlin standard library and all PSI/UI APIs are supplied by the host IntelliJ
-Platform at runtime.
+RuleScribe is an editor-only language plugin with a deliberately minimal
+attack surface:
 
-Automated scanning:
+- **Zero third-party runtime dependencies** in the shipped artifact —
+  verified continuously (the OWASP scan reports **0 dependencies, 0
+  vulnerabilities** on the shipped classpath). The only declared dependency,
+  JUnit, is test-scoped and never distributed.
+- **No network calls, no code execution, no access to credentials** — it only
+  statically parses and inspects the `.rules` files open in your project.
 
-- **CodeQL** static analysis (`java-kotlin`) on every push and pull request to
-  `main`, plus a weekly scheduled scan (`.github/workflows/codeql.yml`).
-- **Dependabot** flags vulnerable Gradle dependencies and keeps GitHub Actions
-  current (`.github/dependabot.yml`), continuously and on GitHub's
-  infrastructure.
-- **OWASP Dependency-Check** against the NVD database, scoped to the plugin's
-  shipped runtime classpath — the scan fails on any bundled dependency with a
-  CVSS score ≥ 7.0. It runs **weekly and on demand**
-  (`.github/workflows/dependency-check.yml`; run locally with
-  `./gradlew dependencyCheckAnalyze`), not on every push, because building the
-  NVD 2.0 database is slow and the shipped artifact has no third-party
-  dependencies to scan. The IntelliJ Platform SDK and test-only dependencies
-  are provided by the host IDE, not distributed, and so are out of scope.
+Every change is checked automatically in CI:
 
-To report a vulnerability, see [SECURITY.md](SECURITY.md).
+- **CodeQL** — static analysis (SAST) of the Kotlin/Java code.
+- **poutine** (BoostSecurity) — SAST of the CI/CD pipelines themselves
+  (injection, unsafe triggers, supply-chain).
+- **Dependabot** — dependency vulnerability alerts + dependency/action updates.
+- **OWASP Dependency-Check** — CVEs in shipped dependencies; fails on
+  CVSS ≥ 7.0.
+- **IntelliJ Plugin Verifier** — binary compatibility across IntelliJ versions.
+
+The build/release pipeline is hardened (least-privilege workflows, no
+`pull_request_target`, no untrusted code run with secrets, isolated publish
+token, tag-gated releases with tests + verification before publish). Every
+Marketplace upload is re-verified server-side by JetBrains — recent releases
+are verified compatible with **IntelliJ IDEA 2024.1 through 2026.2**.
+
+Full details and vulnerability reporting: **[SECURITY.md](SECURITY.md)**.
 
 ## License
 

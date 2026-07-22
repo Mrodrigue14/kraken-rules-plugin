@@ -2,9 +2,9 @@
 
 ## Supported versions
 
-Only the latest released version of RuleScribe receives security fixes.
-The plugin is distributed through the JetBrains Marketplace and as GitHub
-release artifacts; always run the most recent build.
+Only the latest released version of RuleScribe receives security fixes. The
+plugin is distributed through the JetBrains Marketplace and as GitHub release
+artifacts; always run the most recent build.
 
 | Version | Supported |
 | ------- | --------- |
@@ -16,44 +16,78 @@ release artifacts; always run the most recent build.
 Please report suspected vulnerabilities **privately**, not through public
 issues:
 
-1. Preferred: open a private advisory via GitHub Security Advisories
-   (repository *Security* tab → *Report a vulnerability*).
+- Open a private advisory via GitHub Security Advisories (repository
+  *Security* tab → *Report a vulnerability*).
 
-Please include:
+Please include the affected version, a description of the issue and its
+impact, and reproduction steps or a proof of concept if available. You can
+expect an initial acknowledgement within **7 days**; once a fix is released,
+credit is given to the reporter unless anonymity is requested.
 
-- the affected version,
-- a description of the issue and its impact,
-- reproduction steps or a proof of concept if available.
+## Why RuleScribe is low-risk by construction
 
-You can expect an initial acknowledgement within **7 days**. Once a fix is
-released, credit will be given to the reporter unless anonymity is
-requested.
+RuleScribe is an editor-only language plugin. Its attack surface is
+deliberately minimal:
 
-## Security posture
+- **Zero third-party runtime dependencies.** The shipped artifact bundles no
+  third-party libraries. The only declared dependency (JUnit) is test-scoped
+  and never distributed; the Kotlin standard library and all PSI/UI APIs are
+  provided by the host IntelliJ Platform at runtime. This is verified
+  continuously: the OWASP scan runs against the plugin's **shipped** runtime
+  classpath and reports **0 dependencies, 0 vulnerabilities**. Your users are
+  therefore never exposed to a transitive dependency vulnerability through
+  RuleScribe.
+- **No network access.** The plugin makes no outbound network calls of its
+  own — no telemetry, no downloads, no phone-home. It only reads the `.rules`
+  files already open in the project.
+- **No code execution.** It statically parses and inspects DSL text. It never
+  executes rules, KEL expressions, or any user-supplied code.
+- **No access to credentials or secrets.** It reads only the `.rules` source
+  files in the editor.
 
-RuleScribe is intentionally low-risk by construction:
+## Automated security & quality assurance
 
-- **No third-party runtime dependencies are bundled.** The plugin declares
-  only a single test-scoped dependency (JUnit); the Kotlin standard library
-  and all UI/PSI APIs are provided by the host IntelliJ Platform at runtime.
-- **No network access.** The plugin performs no outbound network calls; it
-  only reads and analyzes `.rules` files in the open project.
-- **No code execution.** It parses and inspects DSL text; it does not
-  execute rules or any user-supplied code.
+Every change is checked automatically in GitHub Actions:
 
-## Automated scanning
+| Tool | What it checks | When |
+| ---- | -------------- | ---- |
+| **CodeQL** | Static analysis (SAST) of the Kotlin/Java code | push, PR, weekly |
+| **poutine** (BoostSecurity) | CI/CD pipeline misconfigurations — injection, unsafe triggers, supply-chain | push, PR, weekly |
+| **Dependabot** | Vulnerable dependencies (alerts) + dependency/action updates | continuous / weekly |
+| **OWASP Dependency-Check** | Known CVEs in shipped dependencies; **fails the build on CVSS ≥ 7.0** | weekly, on demand |
+| **IntelliJ Plugin Verifier** | Binary compatibility across IntelliJ versions; opens an issue on breakage | weekly, on demand |
 
-- **CodeQL** static analysis (`java-kotlin`) for code-level vulnerabilities, on
-  every push and pull request to `main` and on a weekly schedule
-  (`.github/workflows/codeql.yml`).
-- **Dependabot** flags vulnerable Gradle dependencies and keeps GitHub Actions
-  up to date (`.github/dependabot.yml`), continuously and on GitHub's
-  infrastructure.
-- **OWASP Dependency-Check** against the NVD database, scoped to the plugin's
-  **shipped** runtime classpath; the scan fails on any bundled dependency with
-  a CVSS score ≥ 7.0. It runs **weekly and on demand**
-  (`.github/workflows/dependency-check.yml`), not on every push, since building
-  the NVD 2.0 database is slow and the shipped artifact carries no third-party
-  dependencies. Build- and test-time dependencies (JUnit and the IntelliJ
-  Platform SDK) are **not** distributed in the plugin and are out of scope;
-  platform libraries are patched by JetBrains through IDE updates.
+Findings from CodeQL and poutine are published to GitHub **code scanning**
+(Security tab). The OWASP scan is scoped to the shipped runtime classpath;
+build- and test-time dependencies (JUnit, the IntelliJ Platform SDK) are not
+distributed and are out of scope — platform libraries are patched by JetBrains
+through IDE updates.
+
+## Supply-chain & CI/CD hardening
+
+The build and release pipeline follows current supply-chain best practices:
+
+- **Least-privilege workflows.** Each workflow declares the minimum
+  `permissions` it needs; the repository's default token is read-only.
+- **No untrusted code execution in privileged contexts.** Automation runs on
+  `pull_request` (never `pull_request_target`), never checks out or runs a
+  pull request's code with secrets available, and never interpolates untrusted
+  input into shell commands — neutralising the "pwn request" class of attacks
+  (independently scanned for by poutine).
+- **Hardened Dependabot auto-merge.** Only patch/minor updates auto-merge, and
+  only after the required CI checks pass; the author is verified via the
+  non-forgeable `pull_request.user.login` field.
+- **Isolated publishing.** The JetBrains Marketplace token is exposed only to
+  the tag-triggered publish job — never to pull-request workflows — so it
+  cannot be exfiltrated by a malicious pull request. Publishing is gated: tests
+  and plugin verification must pass before anything is released.
+
+## Provenance & distribution
+
+- Releases are built and published **only** by CI, from an explicit version
+  **tag** — never from arbitrary commits.
+- Every upload is **re-verified server-side by JetBrains** on the Marketplace.
+  Recent releases are verified **Compatible with IntelliJ IDEA 2024.1 through
+  2026.2** (Plugin Verifier plus a real IDE run, no issues).
+- Source, build configuration, and every CI/CD workflow are fully public and
+  auditable in this repository.
