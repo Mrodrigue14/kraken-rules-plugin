@@ -59,18 +59,23 @@ jobs:
           upload: false
           output: sarif-results
 
-      # paths-ignore ne filtre pas le code généré pour les langages compilés :
-      # on retire donc les alertes de src/main/gen du SARIF avant l'upload.
+      # paths-ignore n'a aucun effet pour les langages compilés : on retire donc
+      # les alertes du parseur généré (src/main/gen) du SARIF avant l'upload.
+      # Filtrage via jq (autonome, sans nom de fichier en dur ni action tierce).
       - name: Filtrer le code généré du SARIF
-        uses: advanced-security/filter-sarif@v1
-        with:
-          patterns: |
-            -src/main/gen/**
-          input: sarif-results/java-kotlin.sarif
-          output: sarif-results/java-kotlin.sarif
+        run: |
+          set -euo pipefail
+          for sarif in sarif-results/*.sarif; do
+            echo "Filtrage de $sarif"
+            jq '.runs |= map(.results |= map(select(
+                  [ .locations[]?.physicalLocation.artifactLocation.uri // "" ]
+                  | any(contains("src/main/gen/")) | not )))' \
+               "$sarif" > "$sarif.tmp"
+            mv "$sarif.tmp" "$sarif"
+          done
 
       - name: Upload du SARIF filtré
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: sarif-results/java-kotlin.sarif
+          sarif_file: sarif-results
           category: "/language:java-kotlin"
