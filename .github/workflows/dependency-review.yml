@@ -1,0 +1,39 @@
+name: Dependency review
+
+# Composante GitHub Advanced Security (gratuite sur repo public), analogue au
+# "policy gating" de JFrog Xray : à chaque pull request, échoue si la PR
+# introduit une dépendance avec une vulnérabilité connue (>= high) ou une
+# licence interdite. Couvre les dépendances déclarées (build.gradle.kts) et les
+# actions GitHub via le graphe de dépendances.
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    name: Revue des dépendances
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Bloque la PR si une nouvelle dépendance a une CVE de sévérité élevée.
+          fail-on-severity: high
+          # Licences fortement copyleft : incompatibles avec la distribution du
+          # plugin sous PolyForm Shield (source-available, non-compete). Bloque
+          # l'ajout d'une dépendance sous l'une de ces licences.
+          deny-licenses: >-
+            GPL-2.0-only, GPL-2.0-or-later,
+            GPL-3.0-only, GPL-3.0-or-later,
+            AGPL-3.0-only, AGPL-3.0-or-later

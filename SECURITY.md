@@ -51,9 +51,10 @@ Every change is checked automatically in GitHub Actions:
 
 | Tool | What it checks | When |
 | ---- | -------------- | ---- |
-| **CodeQL** | Static analysis (SAST) of the Kotlin/Java code | push, PR, weekly |
+| **CodeQL** | Static analysis (SAST) of the Kotlin/Java code, `security-and-quality` suite | push, PR, weekly |
 | **poutine** (BoostSecurity) | CI/CD pipeline misconfigurations — injection, unsafe triggers, supply-chain | push, PR, weekly |
 | **Dependabot** | Vulnerable dependencies (alerts) + dependency/action updates | continuous / weekly |
+| **Dependency Review** | **Blocks a PR** that introduces a dependency with a high-severity CVE or a denied (copyleft) license | every PR |
 | **OWASP Dependency-Check** | Known CVEs in shipped dependencies; **fails the build on CVSS ≥ 7.0** | weekly, on demand |
 | **IntelliJ Plugin Verifier** | Binary compatibility across IntelliJ versions; opens an issue on breakage | weekly, on demand |
 
@@ -62,6 +63,14 @@ Findings from CodeQL and poutine are published to GitHub **code scanning**
 build- and test-time dependencies (JUnit, the IntelliJ Platform SDK) are not
 distributed and are out of scope — platform libraries are patched by JetBrains
 through IDE updates.
+
+These features are part of **GitHub Advanced Security** (free for public
+repositories): code scanning (CodeQL), dependency review, Dependabot alerts,
+and secret scanning with push protection. Together they cover software
+composition analysis (vulnerabilities **and** license policy) and secret
+leakage — the GitHub-native equivalent of a dedicated SCA product's core
+checks. Deep artifact/registry scanning and runtime analysis are out of scope
+for an editor plugin that ships no third-party binaries.
 
 ## Supply-chain & CI/CD hardening
 
