@@ -6,8 +6,7 @@ name: "RuleScribe CodeQL config"
 queries:
   - uses: security-and-quality
 
-# Ne pas remonter d'alertes sur le parseur généré par Grammar-Kit : c'est du
-# code généré automatiquement (src/main/gen), pas notre code source, et on ne
-# le maintient pas à la main. On concentre l'analyse sur le code écrit.
-paths-ignore:
-  - src/main/gen
+# NB : paths-ignore n'a AUCUN effet pour les langages compilés (java-kotlin) —
+# le code généré est compilé et analysé quand même. Le filtrage du parseur
+# généré (src/main/gen) est donc fait sur le SARIF via filter-sarif dans le
+# workflow codeql.yml.
