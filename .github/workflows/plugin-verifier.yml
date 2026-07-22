@@ -44,11 +44,14 @@ jobs:
 
       - name: Déterminer les versions IntelliJ à vérifier
         id: versions
-        # Si une liste est fournie manuellement (workflow_dispatch), on l'utilise ;
-        # sinon on interroge l'API JetBrains pour la dernière release + le dernier
-        # EAP d'IntelliJ IDEA Community (IIC), en gardant la version cible comme
-        # base. Résultat : la liste se met à jour toute seule.
-        # (OVERRIDE passé par env, jamais interpolé dans le script → pas d'injection.)
+        # Source = la liste officielle des builds testables par le Plugin Verifier
+        # (jb.gg/intellij-platform-builds-list). C'est EXACTEMENT ce que le verifier
+        # sait télécharger : on évite les erreurs "cannot be downloaded", et la liste
+        # avance automatiquement quand JetBrains y ajoute de nouvelles versions
+        # (2026.x compris, le jour venu) — contrairement à l'API data.services/IIC
+        # qui était en retard et annonçait des versions non téléchargeables.
+        # On vérifie la version cible (base) + la dernière version IC testable.
+        # OVERRIDE passé par env, jamais interpolé dans le script → pas d'injection.
         env:
           OVERRIDE: ${{ github.event.inputs.ide_versions }}
         run: |
@@ -57,12 +60,10 @@ jobs:
             IDE_VERSIONS="$OVERRIDE"
           else
             BASE="IC-2024.1.7"
-            REL=$(curl -fsS "https://data.services.jetbrains.com/products/releases?code=IIC&latest=true&type=release" | jq -r '.IIC[0].version // empty')
-            EAP=$(curl -fsS "https://data.services.jetbrains.com/products/releases?code=IIC&latest=true&type=eap" | jq -r '.IIC[0].version // empty')
+            LATEST=$(curl -fsSL "https://jb.gg/intellij-platform-builds-list" \
+              | grep -oE 'IC-20[0-9]{2}\.[0-9]+(\.[0-9]+)?' | sort -uV | tail -1)
             LIST="$BASE"
-            [ -n "$REL" ] && LIST="$LIST,IC-$REL"
-            [ -n "$EAP" ] && LIST="$LIST,IC-$EAP"
-            # Dédoublonnage en conservant l'ordre.
+            [ -n "$LATEST" ] && LIST="$LIST,$LATEST"
             IDE_VERSIONS=$(printf '%s' "$LIST" | tr ',' '\n' | awk 'NF && !seen[$0]++' | paste -sd,)
           fi
           echo "Versions vérifiées : $IDE_VERSIONS"
