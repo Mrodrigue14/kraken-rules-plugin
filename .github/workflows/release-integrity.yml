@@ -31,6 +31,8 @@ jobs:
       - name: Comparer la version Marketplace aux releases attestées
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Indique le repo à gh sans avoir besoin d'un checkout git.
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
