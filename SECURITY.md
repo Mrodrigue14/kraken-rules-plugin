@@ -18,9 +18,6 @@ issues:
 
 1. Preferred: open a private advisory via GitHub Security Advisories
    (repository *Security* tab → *Report a vulnerability*).
-2. Alternatively, email the maintainer at
-   masterketchup144@gmail.com with the subject line
-   `[RuleScribe security]`.
 
 Please include:
 
