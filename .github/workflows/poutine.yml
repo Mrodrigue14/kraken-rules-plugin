@@ -23,6 +23,10 @@ on:
       - 'NOTICE'
       - 'third_party/**'
       - '.gitignore'
+  # Scan périodique : re-vérifie les workflows existants avec les règles
+  # poutine les plus récentes, même sans nouveau push (lundi 04:00 UTC).
+  schedule:
+    - cron: '0 4 * * 1'
   workflow_dispatch:
 
 jobs:
