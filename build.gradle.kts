@@ -44,6 +44,13 @@ dependencyCheck {
     formats = listOf("HTML", "JUNIT")
     scanConfigurations = listOf("runtimeClasspath")
 
+    // Stratégie "single updater + readers" recommandée par OWASP : un job
+    // met à jour la base NVD (autoUpdate = true) et archive le `data` dir ;
+    // les jobs "lecteurs" (ex. publish) le restaurent et scannent avec
+    // -PodcAutoUpdate=false → aucun appel NVD, donc rapide et fiable.
+    autoUpdate = (project.findProperty("odcAutoUpdate") as String?)
+        ?.toBooleanStrictOrNull() ?: true
+
     // La clé API NVD (secret CI) accélère la synchro de la base. Elle reste
     // facultative : si le secret est absent ou vide (p. ex. clé expirée puis
     // retirée), on ne la passe pas et dependency-check bascule sur le mode

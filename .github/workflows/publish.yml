@@ -65,27 +65,32 @@ jobs:
       - name: Build du plugin
         run: ./gradlew buildPlugin
 
-      # Cache de la base NVD (partagé avec le workflow dependency-check) pour
-      # que le scan ci-dessous soit rapide et fiable.
-      - name: Cache de la base NVD
-        uses: actions/cache@v6
-        with:
-          path: ~/.gradle/dependency-check-data
-          key: nvd-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            nvd-${{ runner.os }}-
-
-      # Rapport OWASP généré depuis CE commit taggé : c'est le rapport de
-      # cette release exacte. Placé AVANT la publication : si le scan échoue,
-      # rien n'est publié (pas de release partielle).
+      # Rôle LECTEUR de la stratégie OWASP "single updater + readers" : on
+      # restaure la base NVD pré-construite depuis la release `nvd-cache`
+      # (maintenue par le workflow dependency-check), puis on scanne avec
+      # autoUpdate DÉSACTIVÉ → aucun appel au NVD, donc rapide et fiable.
+      # Si l'archive n'existe pas encore (bootstrap), on retombe sur une mise à
+      # jour complète (lente) pour ne pas bloquer la release.
+      # Placé AVANT la publication : si le scan échoue, rien n'est publié.
       - name: Rapport OWASP Dependency-Check
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
-          ./gradlew dependencyCheckAnalyze
+          mkdir -p ~/.gradle/dependency-check-data
+          if gh release download nvd-cache --pattern nvd-data.zip \
+               --output /tmp/nvd-data.zip --clobber 2>/dev/null; then
+            unzip -q -o /tmp/nvd-data.zip -d ~/.gradle/dependency-check-data
+            rm -f /tmp/nvd-data.zip
+            echo "Base NVD restaurée depuis nvd-cache → scan sans mise à jour."
+            ./gradlew dependencyCheckAnalyze -PodcAutoUpdate=false
+          else
+            echo "Archive nvd-cache absente → mise à jour NVD complète (lente)."
+            ./gradlew dependencyCheckAnalyze
+          fi
           cp build/reports/dependency-check-report.html "dependency-check-report-${VERSION}.html"
 
       - name: Publier sur le JetBrains Marketplace
