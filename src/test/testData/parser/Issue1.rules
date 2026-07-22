@@ -1,0 +1,7 @@
+Context Policy {
+  policyCd : String
+}
+
+Rule "Policy code mandatory" On Policy.policyCd {
+  Assert Policy.policyCd != null
+}
