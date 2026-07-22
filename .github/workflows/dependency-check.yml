@@ -12,6 +12,11 @@ on:
   schedule:
     - cron: '0 5 * * 0'
   workflow_dispatch:
+    inputs:
+      seed_data_url:
+        description: "URL d'un zip de base NVD pré-construite (asset de Release) à restaurer une fois pour amorcer le cache"
+        required: false
+        default: ""
 
 jobs:
   dependency-check:
@@ -56,6 +61,23 @@ jobs:
           key: nvd-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             nvd-${{ runner.os }}-
+
+      # Amorçage one-shot : restaure une base NVD pré-construite (générée
+      # localement puis attachée à une Release GitHub) au lieu de la
+      # télécharger depuis le NVD (lent/instable). N'agit que si l'URL est
+      # fournie via workflow_dispatch ; ignoré lors des runs planifiés. Après
+      # un run réussi, le cache Actions prend le relais et cette entrée n'est
+      # plus nécessaire.
+      - name: Amorcer la base NVD depuis un zip (optionnel)
+        if: ${{ github.event.inputs.seed_data_url != '' }}
+        run: |
+          echo "Restauration de la base NVD depuis l'URL fournie…"
+          mkdir -p ~/.gradle/dependency-check-data
+          curl -fsSL "${{ github.event.inputs.seed_data_url }}" -o /tmp/nvd-seed.zip
+          unzip -q -o /tmp/nvd-seed.zip -d ~/.gradle/dependency-check-data
+          rm -f /tmp/nvd-seed.zip
+          echo "Contenu restauré :"
+          ls -la ~/.gradle/dependency-check-data
 
       - name: Scan des dépendances (échoue si CVE >= 7.0)
         env:
