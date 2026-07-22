@@ -70,10 +70,16 @@ jobs:
       # plus nécessaire.
       - name: Amorcer la base NVD depuis un zip (optionnel)
         if: ${{ github.event.inputs.seed_data_url != '' }}
+        # L'URL est passée par une variable d'environnement et référencée en
+        # tant que variable shell ("$SEED_URL"), jamais interpolée directement
+        # via ${{ }} dans le script : cela empêche toute injection de commande
+        # (remédiation recommandée par poutine / GitHub).
+        env:
+          SEED_URL: ${{ github.event.inputs.seed_data_url }}
         run: |
           echo "Restauration de la base NVD depuis l'URL fournie…"
           mkdir -p ~/.gradle/dependency-check-data
-          curl -fsSL "${{ github.event.inputs.seed_data_url }}" -o /tmp/nvd-seed.zip
+          curl -fsSL "$SEED_URL" -o /tmp/nvd-seed.zip
           unzip -q -o /tmp/nvd-seed.zip -d ~/.gradle/dependency-check-data
           rm -f /tmp/nvd-seed.zip
           echo "Contenu restauré :"
