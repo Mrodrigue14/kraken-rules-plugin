@@ -1,0 +1,80 @@
+name: Publish
+
+# Publie le plugin sur le JetBrains Marketplace ET crée une GitHub Release,
+# déclenché par un tag de version (ex. v0.5.8). Chaque tag = une release
+# publique intentionnelle.
+#
+# Prérequis : secret JETBRAINS_MARKETPLACE_TOKEN (Marketplace → My Tokens).
+# Flux type : bumper `version` dans build.gradle.kts → commit →
+#   git tag v0.5.8 && git push origin v0.5.8
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# contents: write pour créer la GitHub Release. Le token Marketplace, lui,
+# passe par un secret dédié (PUBLISH_TOKEN), jamais par le GITHUB_TOKEN.
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publier (Marketplace + GitHub Release)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle (avec cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Rendre gradlew exécutable
+        run: chmod +x gradlew
+
+      # Garde-fou : le tag (sans "v") doit correspondre à la version déclarée
+      # dans build.gradle.kts, pour éviter de publier une version incohérente.
+      # Ignoré lors d'un déclenchement manuel (pas de tag).
+      - name: Vérifier la cohérence tag / version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          FILE_VERSION=$(grep -oE 'version = "[^"]+"' build.gradle.kts | head -1 | sed -E 's/version = "([^"]+)"/\1/')
+          TAG_VERSION="${TAG#v}"
+          echo "Tag: $TAG_VERSION  |  build.gradle.kts: $FILE_VERSION"
+          if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
+            echo "::error::Le tag ($TAG_VERSION) ne correspond pas à la version de build.gradle.kts ($FILE_VERSION)."
+            exit 1
+          fi
+
+      - name: Tests + vérification (ne publie pas si ça casse)
+        run: ./gradlew test verifyPluginConfiguration
+
+      - name: Build du plugin
+        run: ./gradlew buildPlugin
+
+      - name: Publier sur le JetBrains Marketplace
+        env:
+          PUBLISH_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+        run: ./gradlew publishPlugin
+
+      - name: Créer la GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        # TAG passé par env puis référencé comme variable shell : jamais
+        # interpolé via ${{ }} dans le script (pas d'injection de commande).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" build/distributions/*.zip \
+            --title "$TAG" \
+            --generate-notes

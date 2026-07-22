@@ -95,4 +95,9 @@ tasks {
             .ifEmpty { listOf("IC-2024.1.7") }
         ideVersions.set(versions)
     }
+    // Publication sur le JetBrains Marketplace. Le token est fourni par la
+    // variable d'environnement PUBLISH_TOKEN (secret CI), jamais en clair.
+    publishPlugin {
+        token.set(System.getenv("PUBLISH_TOKEN"))
+    }
 }
