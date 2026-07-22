@@ -3,8 +3,24 @@ name: Build
 on:
   push:
     branches: [ main ]
+    # Ne pas lancer le build/les scans pour des changements purement
+    # documentaires (README, ROADMAP, LICENSE…) : ils ne peuvent pas casser
+    # le code ni introduire de vulnérabilité. Un push qui touche AUSSI du code
+    # déclenche quand même le workflow.
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'third_party/**'
+      - '.gitignore'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'third_party/**'
+      - '.gitignore'
   workflow_dispatch:
 
 jobs:

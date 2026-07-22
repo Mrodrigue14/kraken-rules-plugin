@@ -3,8 +3,22 @@ name: "CodeQL"
 on:
   push:
     branches: [ main ]
+    # Changements purement documentaires : pas d'analyse de code nécessaire.
+    # Le scan hebdomadaire (schedule) tourne de toute façon.
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'third_party/**'
+      - '.gitignore'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'third_party/**'
+      - '.gitignore'
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
