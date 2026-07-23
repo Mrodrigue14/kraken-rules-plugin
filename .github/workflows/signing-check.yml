@@ -1,0 +1,64 @@
+name: Vérification de la signature
+
+# Test à blanc de la chaîne de signature : build → signPlugin →
+# verifyPluginSignature, SANS rien publier ni tagger. Sert à valider les
+# secrets de signature avant une release (une signature qui casse pendant
+# `publish` obligerait à supprimer le tag et à recommencer), et à re-tester
+# après une rotation ou un renouvellement du certificat.
+on:
+  workflow_dispatch:
+
+# Lecture seule : ce workflow ne publie rien.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  signing-check:
+    name: Signer et vérifier (test à blanc)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Java + Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build, signature et vérification
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew buildPlugin signPlugin verifyPluginSignature
+
+      # Sans ce contrôle, des secrets absents feraient simplement sauter
+      # signPlugin et ce workflow passerait au vert sans avoir rien signé.
+      - name: Confirmer qu'un artefact signé a bien été produit
+        run: |
+          set -euo pipefail
+          if ! ls build/distributions/*-signed.zip >/dev/null 2>&1; then
+            echo "::error::Aucun artefact signé produit — les secrets CERTIFICATE_CHAIN / PRIVATE_KEY / PRIVATE_KEY_PASSWORD sont-ils bien configurés ?"
+            exit 1
+          fi
+          ls -lh build/distributions/*-signed.zip
+
+      # Le certificat est du matériel public : afficher son sujet et sa date
+      # d'expiration ne divulgue rien, et évite de découvrir une expiration
+      # le jour d'une release.
+      - name: Identité et expiration du certificat
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$CERTIFICATE_CHAIN" > chain.crt
+          openssl x509 -in chain.crt -noout -subject -issuer -enddate
+          END_EPOCH=$(date -d "$(openssl x509 -in chain.crt -noout -enddate | cut -d= -f2)" +%s)
+          DAYS=$(( (END_EPOCH - $(date +%s)) / 86400 ))
+          echo "Expire dans $DAYS jours."
+          if [ "$DAYS" -lt 30 ]; then
+            echo "::warning::Le certificat de signature expire dans $DAYS jours — prévoir son renouvellement."
+          fi

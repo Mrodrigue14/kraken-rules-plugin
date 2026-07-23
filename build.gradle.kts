@@ -118,6 +118,32 @@ tasks {
         if (!key.isNullOrBlank()) privateKey.set(key)
         if (!pwd.isNullOrBlank()) password.set(pwd)
     }
+    // Contre-vérification : relit l'archive signée et valide la signature
+    // contre le certificat. Exécutée avant la publication, elle transforme une
+    // clé mal formée ou un certificat dépareillé en échec net plutôt qu'en
+    // artefact publié dont la signature ne vaut rien.
+    // verifyPluginSignature attend un FICHIER de certificat : on le matérialise
+    // via une vraie tâche productrice, pour que Gradle l'ait écrit avant de
+    // valider les entrées de la vérification. Un certificat est du matériel
+    // public (seule la clé privée est sensible) : rien de secret sur disque.
+    val certificateChainFilePath = layout.buildDirectory.file("signing/certificate-chain.crt")
+    val writeCertificateChain = register("writeCertificateChain") {
+        val chain = System.getenv("CERTIFICATE_CHAIN")
+        onlyIf { !chain.isNullOrBlank() }
+        outputs.file(certificateChainFilePath)
+        doLast {
+            certificateChainFilePath.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(chain.orEmpty())
+            }
+        }
+    }
+    verifyPluginSignature {
+        val chain = System.getenv("CERTIFICATE_CHAIN")
+        onlyIf { !chain.isNullOrBlank() }
+        dependsOn(writeCertificateChain)
+        certificateChainFile.set(certificateChainFilePath)
+    }
     // Publication sur le JetBrains Marketplace. Le token est fourni par la
     // variable d'environnement PUBLISH_TOKEN (secret CI), jamais en clair.
     publishPlugin {
