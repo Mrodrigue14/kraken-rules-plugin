@@ -102,6 +102,22 @@ tasks {
             .ifEmpty { listOf("IC-2024.1.7") }
         ideVersions.set(versions)
     }
+    // Signature cryptographique du plugin : l'IDE peut vérifier que l'artefact
+    // vient bien de nous et n'a pas été altéré. Complète l'attestation SLSA
+    // (qui prouve « buildé par la pipeline ») côté distribution.
+    //
+    // Les trois éléments viennent de secrets CI, jamais du dépôt. Si aucun
+    // n'est fourni (build local, fork), la tâche est simplement sautée et la
+    // publication se fait sans signature — on ne casse pas le build.
+    signPlugin {
+        val chain = System.getenv("CERTIFICATE_CHAIN")
+        val key = System.getenv("PRIVATE_KEY")
+        val pwd = System.getenv("PRIVATE_KEY_PASSWORD")
+        onlyIf { !chain.isNullOrBlank() && !key.isNullOrBlank() }
+        if (!chain.isNullOrBlank()) certificateChain.set(chain)
+        if (!key.isNullOrBlank()) privateKey.set(key)
+        if (!pwd.isNullOrBlank()) password.set(pwd)
+    }
     // Publication sur le JetBrains Marketplace. Le token est fourni par la
     // variable d'environnement PUBLISH_TOKEN (secret CI), jamais en clair.
     publishPlugin {

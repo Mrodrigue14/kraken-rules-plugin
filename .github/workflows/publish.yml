@@ -59,8 +59,38 @@ jobs:
       - name: Tests + vérification (ne publie pas si ça casse)
         run: ./gradlew test verifyPluginConfiguration
 
-      - name: Build du plugin
-        run: ./gradlew buildPlugin
+      # Build PUIS signature, dans cet ordre et AVANT l'attestation : c'est
+      # l'artefact signé qui part sur le Marketplace, donc c'est lui qui doit
+      # être attesté, sinon le zip téléchargé par un utilisateur n'aurait pas
+      # l'empreinte couverte par l'attestation. signPlugin est sauté si les
+      # secrets de signature ne sont pas configurés (cf. build.gradle.kts).
+      - name: Build + signature du plugin
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew buildPlugin signPlugin
+
+      # Sélectionne l'artefact réellement distribué : le zip signé s'il existe,
+      # sinon le zip simple. Sert à la fois pour la GitHub Release et pour que
+      # l'utilisateur télécharge exactement ce qui a été attesté.
+      - name: Identifier l'artefact distribué
+        id: artifact
+        # Sélection ancrée sur la version du tag (et non sur "le premier zip
+        # trouvé") : déterministe même si le dossier contient d'anciens builds.
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARTIFACT=$(ls build/distributions/*-"${VERSION}"-signed.zip 2>/dev/null | head -1 || true)
+          if [ -n "$ARTIFACT" ]; then
+            echo "Plugin signé : $ARTIFACT"
+          else
+            ARTIFACT=$(ls build/distributions/*-"${VERSION}".zip | head -1)
+            echo "::warning::Plugin NON signé (secrets de signature absents) : $ARTIFACT"
+          fi
+          echo "path=$ARTIFACT" >> "$GITHUB_OUTPUT"
 
       # Attestation de provenance SLSA : lie cryptographiquement le zip livré au
       # commit, au workflow et au runner qui l'ont produit. N'importe qui peut
@@ -71,7 +101,7 @@ jobs:
       - name: Attester la provenance du build (SLSA)
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: build/distributions/*.zip
+          subject-path: ${{ steps.artifact.outputs.path }}
 
       # Rôle LECTEUR de la stratégie OWASP "single updater + readers" : on
       # restaure la base NVD pré-construite depuis la release `nvd-cache`
@@ -101,9 +131,16 @@ jobs:
           fi
           cp build/reports/dependency-check-report.html "dependency-check-report-${VERSION}.html"
 
+      # publishPlugin déclenche signPlugin en amont : si les trois secrets de
+      # signature existent, l'artefact publié est signé (l'IDE peut vérifier son
+      # authenticité). S'ils sont absents, signPlugin est sauté et la
+      # publication se fait sans signature — aucune régression.
       - name: Publier sur le JetBrains Marketplace
         env:
           PUBLISH_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
         run: ./gradlew publishPlugin
 
       - name: Créer la GitHub Release
@@ -117,6 +154,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
+          ARTIFACT: ${{ steps.artifact.outputs.path }}
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
@@ -155,7 +193,7 @@ jobs:
 
           echo "--- Release notes ---"; cat RELEASE_NOTES.md
           gh release create "$TAG" \
-            build/distributions/*.zip \
+            "$ARTIFACT" \
             "$REPORT" \
             --title "$TAG" \
             --notes-file RELEASE_NOTES.md

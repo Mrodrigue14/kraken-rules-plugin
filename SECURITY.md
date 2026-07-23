@@ -114,6 +114,11 @@ The build and release pipeline follows current supply-chain best practices:
 
 - Releases are built and published **only** by CI, from an explicit version
   **tag** — never from arbitrary commits.
+- The published artifact is **cryptographically signed** (JetBrains plugin
+  signing) when signing credentials are configured, so the IDE can verify the
+  plugin is authentic and unaltered. This complements the build provenance
+  attestation: the attestation proves *the pipeline built it*, the signature
+  proves *it genuinely comes from this publisher*.
 - Every upload is **re-verified server-side by JetBrains** on the Marketplace.
   Recent releases are verified **Compatible with IntelliJ IDEA 2024.1 through
   2026.2** (Plugin Verifier plus a real IDE run, no issues).
