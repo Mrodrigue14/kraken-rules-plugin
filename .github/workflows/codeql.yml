@@ -39,11 +39,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
+      # Composite action plutôt qu'un setup-java isolé : elle apporte le cache
+      # Gradle. `build-mode: autobuild` compile réellement le plugin, donc sans
+      # cache chaque analyse re-télécharge le SDK IntelliJ (~1 Go) — d'où 4 min
+      # ici contre 1 min pour le workflow Build. En lecture seule : ce workflow
+      # consomme le cache écrit par build.yml sans gonfler le budget du dépôt.
+      - name: Setup Java + Gradle
+        uses: ./.github/actions/setup-java-gradle
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
