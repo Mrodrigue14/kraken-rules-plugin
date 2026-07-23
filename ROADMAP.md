@@ -55,6 +55,10 @@ Port the reference algorithm from kraken-expression-language
 - Spellchecker support inside strings (descriptions, messages).
 - Semantic highlighting: visually distinguish resolved vs. unresolved
   references beyond the inspection squiggle.
+- Bracket pair colorization: color matching `{}`/`()`/`[]` by nesting depth
+  (via an Annotator), most useful for nested KEL expressions. Customizable in
+  the color settings page and toggleable. Note: overlaps with the third-party
+  Rainbow Brackets plugin — the value is built-in, DSL-tuned colors.
 
 ## v1.0.0 — Stabilization
 
