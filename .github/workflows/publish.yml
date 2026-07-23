@@ -36,21 +36,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Gradle (cache en lecture seule)
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          # Ne pas écrire de cache Gradle ici (cf. build.yml seul écrivain) —
-          # préserve le budget de cache pour le cache NVD.
-          cache-read-only: true
-
-      - name: Rendre gradlew exécutable
-        run: chmod +x gradlew
+      - name: Setup Java + Gradle
+        uses: ./.github/actions/setup-java-gradle
 
       # Garde-fou : le tag (sans "v") doit correspondre à la version déclarée
       # dans build.gradle.kts, pour éviter de publier une version incohérente.

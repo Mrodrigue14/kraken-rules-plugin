@@ -1,0 +1,36 @@
+name: Setup Java + Gradle
+description: >-
+  JDK Temurin, Gradle (avec cache) et gradlew exécutable. Factorise le bloc de
+  setup répété par build / dependency-check / plugin-verifier / publish, pour
+  qu'un changement de version de JDK ou d'action se fasse à un seul endroit.
+
+inputs:
+  java-version:
+    description: Version du JDK Temurin à installer.
+    required: false
+    default: "17"
+  cache-read-only:
+    description: >-
+      Ne pas ÉCRIRE le cache Gradle (true par défaut). Seul build.yml doit
+      l'écrire : ça évite d'accumuler des caches multi-Go (SDK IntelliJ) qui
+      satureraient le budget de 10 Go du repo.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK ${{ inputs.java-version }}
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v6
+      with:
+        cache-read-only: ${{ inputs.cache-read-only }}
+
+    - name: Rendre gradlew exécutable
+      shell: bash
+      run: chmod +x gradlew

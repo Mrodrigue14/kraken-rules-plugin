@@ -38,17 +38,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+      # Seul workflow autorisé à ÉCRIRE le cache Gradle (cf. composite action).
+      - name: Setup Java + Gradle
+        uses: ./.github/actions/setup-java-gradle
         with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Gradle (avec cache)
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Rendre gradlew exécutable
-        run: chmod +x gradlew
+          cache-read-only: "false"
 
       - name: Tests
         run: ./gradlew test
