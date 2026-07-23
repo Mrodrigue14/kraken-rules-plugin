@@ -72,6 +72,25 @@ leakage — the GitHub-native equivalent of a dedicated SCA product's core
 checks. Deep artifact/registry scanning and runtime analysis are out of scope
 for an editor plugin that ships no third-party binaries.
 
+### OWASP Top 10 coverage
+
+CodeQL runs the **`security-and-quality`** suite
+(`.github/codeql/codeql-config.yml`), which is a **superset** of CodeQL's
+security queries — the built-in suites are nested:
+
+```
+code-scanning (default)  ⊂  security-extended  ⊂  security-and-quality
+```
+
+An "OWASP Top 10" query suite is a *filter* selecting queries carrying the
+corresponding CWE tags, so it is by construction a **subset** of what already
+runs here. Adding it would duplicate findings rather than detect anything new.
+
+Coverage is verifiable rather than asserted: every CodeQL alert carries its
+`external/cwe/cwe-NNN` tag, so results can be filtered and reported by CWE —
+and therefore mapped to OWASP Top 10 categories — directly in the
+**Security → Code scanning** view.
+
 ## Supply-chain & CI/CD hardening
 
 The build and release pipeline follows current supply-chain best practices:
