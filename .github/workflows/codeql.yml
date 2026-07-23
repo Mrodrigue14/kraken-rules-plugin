@@ -11,14 +11,11 @@ on:
       - 'NOTICE'
       - 'third_party/**'
       - '.gitignore'
+  # PAS de paths-ignore ici : `Analyze (java-kotlin)` est un check REQUIS par la
+  # protection de `main`. Skippé, il ne rapporte aucun statut et bloque la PR
+  # indéfiniment. Le filtre reste sur `push`, où il n'y a rien à réanalyser.
   pull_request:
     branches: [ main ]
-    paths-ignore:
-      - '**/*.md'
-      - 'LICENSE'
-      - 'NOTICE'
-      - 'third_party/**'
-      - '.gitignore'
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:

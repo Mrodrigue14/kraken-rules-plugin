@@ -13,14 +13,13 @@ on:
       - 'NOTICE'
       - 'third_party/**'
       - '.gitignore'
+  # PAS de paths-ignore ici : ce job est un check REQUIS par la protection de
+  # `main`. Un workflow skippé ne rapporte aucun statut, et un check requis qui
+  # ne rapporte jamais reste « Expected » — la PR devient impossible à merger.
+  # Le filtre reste sur `push` : après le merge d'une PR purement documentaire,
+  # il n'y a effectivement rien à re-tester.
   pull_request:
     branches: [ main ]
-    paths-ignore:
-      - '**/*.md'
-      - 'LICENSE'
-      - 'NOTICE'
-      - 'third_party/**'
-      - '.gitignore'
   workflow_dispatch:
 
 # Annule le run devenu obsolète quand un nouveau push arrive sur la même ref
