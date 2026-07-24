@@ -1,5 +1,9 @@
 # Security Policy
 
+> For a one-page summary aimed at security and procurement reviewers, see
+> [VENDOR-SECURITY-OVERVIEW.md](VENDOR-SECURITY-OVERVIEW.md). This document is
+> the detailed reference behind it.
+
 ## Supported versions
 
 Only the latest released version of RuleScribe receives security fixes. The
