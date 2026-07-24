@@ -36,7 +36,9 @@ deliberately minimal:
   continuously: the OWASP scan runs against the plugin's **shipped** runtime
   classpath and reports **0 dependencies, 0 vulnerabilities**. Your users are
   therefore never exposed to a transitive dependency vulnerability through
-  RuleScribe.
+  RuleScribe. This is not only prose: each release ships a **CycloneDX SBOM**
+  scoped to the same runtime classpath, so the claim is checkable by your own
+  tooling rather than taken on trust.
 - **No network access.** The plugin makes no outbound network calls of its
   own — no telemetry, no downloads, no phone-home. It only reads the `.rules`
   files already open in the project.
@@ -169,6 +171,28 @@ To be precise about what this proves: the certificate is **self-signed**, so it
 attests integrity and continuity — this artifact was not altered, and it comes
 from the same key as previous releases — not an identity vouched for by a
 certificate authority.
+
+### Inventory, not just a verdict
+
+Each release also carries a **CycloneDX SBOM** (`rulescribe-sbom-<version>.json`),
+attested and therefore bound to that exact artifact:
+
+```
+gh attestation verify rulescribe-<version>-signed.zip \
+  --repo Mrodrigue14/RuleScribe-plugin-for-kraken-rules \
+  --predicate-type https://cyclonedx.org/bom
+```
+
+It complements the OWASP report rather than duplicating it. The OWASP report is
+a **verdict**: accurate the day it was produced, and it ages as new CVEs are
+published. The SBOM is an **inventory**: it does not age, and it lets you
+re-scan any release against your own vulnerability feed at any time, on your
+schedule rather than ours.
+
+Both are scoped to the runtime classpath — what the `.zip` actually ships. An
+unscoped SBOM would list the IntelliJ Platform SDK, JUnit and the Kotlin
+compiler: build-time dependencies that are never distributed, and listing them
+would contradict the zero-dependency result above rather than inform you.
 
 Every upload is additionally re-verified server-side by JetBrains on the
 Marketplace; recent releases are verified **Compatible with IntelliJ IDEA

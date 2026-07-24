@@ -106,6 +106,22 @@ jobs:
         with:
           subject-path: ${{ steps.artifact.outputs.path }}
 
+      # SBOM CycloneDX de l'artefact livré (périmètre runtimeClasspath, cf.
+      # build.gradle.kts). Complémentaire du rapport OWASP : celui-ci est un
+      # VERDICT daté qui se périme au prochain CVE publié, le SBOM est un
+      # INVENTAIRE durable et lisible par machine, qui permet à un utilisateur
+      # de rescanner lui-même en continu sans dépendre de notre calendrier.
+      - name: Générer le SBOM
+        run: ./gradlew cyclonedxDirectBom
+
+      # Attesté, donc lié cryptographiquement au zip : le SBOM se vérifie avec
+      # le même `gh attestation verify` que la provenance.
+      - name: Attester le SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: ${{ steps.artifact.outputs.path }}
+          sbom-path: build/reports/cyclonedx-direct/rulescribe-sbom.json
+
       # Rôle LECTEUR de la stratégie OWASP "single updater + readers" : on
       # restaure la base NVD pré-construite depuis la release `nvd-cache`
       # (maintenue par le workflow dependency-check), puis on scanne avec
@@ -165,6 +181,11 @@ jobs:
           REPORT="dependency-check-report-${VERSION}.html"
           SHA=$(sha256sum "$REPORT" | awk '{print $1}')
 
+          SBOM="rulescribe-sbom-${VERSION}.json"
+          cp build/reports/cyclonedx-direct/rulescribe-sbom.json "$SBOM"
+          SBOM_COMPONENTS=$(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))\
+            .get('components', [])))" "$SBOM")
+
           # Certificat de signature publié avec la release : sans lui, personne
           # ne peut vérifier la signature du zip, et la section « verify it
           # yourself » de SECURITY.md promettrait plus qu'elle ne permet.
@@ -207,6 +228,21 @@ jobs:
             echo '```'
             echo "sha256sum $REPORT   # must equal the SHA-256 above"
             echo '```'
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Software Bill of Materials"
+            echo ""
+            echo "\`$SBOM\` (CycloneDX 1.6) lists what the shipped artifact contains: **$SBOM_COMPONENTS third-party components**, scoped to the runtime classpath like the scan above."
+            echo ""
+            echo "The OWASP report is a **verdict** — accurate on the day it was produced, and it ages as new CVEs are published. The SBOM is an **inventory**: it does not age, and it lets you re-scan this release against your own vulnerability feed at any time, without waiting on us."
+            echo ""
+            echo "It is attested, so it is bound to this exact artifact:"
+            echo ""
+            echo '```'
+            echo "gh attestation verify $(basename "$ARTIFACT") \\"
+            echo "  --repo $GITHUB_REPOSITORY --predicate-type https://cyclonedx.org/bom"
+            echo '```'
           } >> RELEASE_NOTES.md
 
           # Section signature : le certificat public permet de vérifier le zip,
@@ -242,6 +278,7 @@ jobs:
           gh release create "$TAG" \
             "$ARTIFACT" \
             "$REPORT" \
+            "$SBOM" \
             $CERT \
             --title "$TAG" \
             --notes-file RELEASE_NOTES.md

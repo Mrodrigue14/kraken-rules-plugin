@@ -8,6 +8,7 @@ plugins {
     id("org.jetbrains.grammarkit") version "2022.3.2.2"
     id("org.owasp.dependencycheck") version "12.2.2"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    id("org.cyclonedx.bom") version "3.3.0"
 }
 
 group = "com.kraken.plugin"
@@ -29,6 +30,22 @@ intellij {
 
 kotlin {
     jvmToolchain(17)
+}
+
+// SBOM CycloneDX de l'artefact LIVRÉ. Même périmètre que le scan OWASP :
+// `runtimeClasspath`, c'est-à-dire ce que le zip embarque réellement.
+//
+// Sans ce cadrage, le SBOM par défaut liste 28 composants (SDK IntelliJ, JUnit,
+// compilateur Kotlin, Ant…) qui sont des dépendances de BUILD, jamais
+// distribuées — il contredirait frontalement le « zéro dépendance tierce » que
+// le rapport OWASP démontre par ailleurs.
+tasks.cyclonedxDirectBom {
+    includeConfigs.set(listOf("runtimeClasspath"))
+    // Le SBOM décrit ce qui est LIVRÉ, pas la machine qui a compilé : sans
+    // cela, Gradle et le JDK du runner s'y retrouveraient. La provenance du
+    // build est déjà couverte par l'attestation SLSA.
+    includeBuildEnvironment.set(false)
+    jsonOutput.set(layout.buildDirectory.file("reports/cyclonedx-direct/rulescribe-sbom.json"))
 }
 
 // Couverture de tests. Le parseur de `src/main/gen` est généré par Grammar-Kit
